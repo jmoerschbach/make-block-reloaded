@@ -15,7 +15,7 @@ bool config_key_released;
 
 void config_load() {
   // load initial value from eeprom if availble
-  if(EEPROM.read(10) == 0x42) {
+  if(EEPROM.read(10) == EEPROM_MAGIC_MARKER) {
     EEPROM.get(11, config_brightness);
     EEPROM.get(12, config_audio);
   } else {
@@ -134,7 +134,7 @@ uint8_t config_process(uint8_t keys) {
 	audio_on(config_audio);
 
 	// save config in eeprom
-	EEPROM.write(10, 0x42);   // write magic marker
+	EEPROM.write(10, EEPROM_MAGIC_MARKER);   // write magic marker
 	EEPROM.put(11, config_brightness);
 	EEPROM.put(12, config_audio);
 

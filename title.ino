@@ -1,5 +1,6 @@
 #include <EEPROM.h>
-
+#include <FastLed.h>
+#include "tetris.h"
 // variables required during the title 
 int16_t title_score_len, title_scroll;
 uint8_t title_logo_fade;
@@ -32,7 +33,7 @@ void title_init() {
   LEDS.setBrightness(config_get_brightness());
 
   // check if there's a user name in eeprom
-  if(EEPROM.read(20) == 0x42) {
+  if(EEPROM.read(20) == EEPROM_MAGIC_MARKER) {
     uint8_t i = 0;
 
     // append the "BY " as it may have previously been removed
@@ -53,7 +54,7 @@ void title_init() {
 
   // load hi score
   uint32_t hi = 0;
-  if(EEPROM.read(0) == 0x42)
+  if(EEPROM.read(0) == EEPROM_MAGIC_MARKER)
     EEPROM.get(1, hi);
 
   ltoa(hi, title_score_msg+strlen(title_score_msg), 10);

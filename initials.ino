@@ -61,7 +61,7 @@ void initials_init(uint32_t score) {
   // load previous name from eeprom
   // this is stored from byte 20 to 36
   memset(initials_str, 0, 16);
-  if(EEPROM.read(20) == 0x42) {
+  if(EEPROM.read(20) == EEPROM_MAGIC_MARKER) {
     for(uint8_t i=0;i<15;i++)
       EEPROM.get(21+i, initials_str[i]);
   } else
@@ -132,7 +132,7 @@ uint8_t initials_process(uint8_t keys) {
       for(uint8_t i=initials_cur_chr;i<16;i++)
 	initials_str[i] = 0;
 
-      EEPROM.write(20, 0x42);   // write magic marker
+      EEPROM.write(20, EEPROM_MAGIC_MARKER);   // write magic marker
       for(uint8_t i=0;i<15;i++)
 	EEPROM.put(21+i, initials_str[i]);
 

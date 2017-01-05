@@ -5,15 +5,7 @@
 #ifndef TETRIS_H
 #define TETRIS_H
 
-// enable LED_SERPENTINE if the stripe wiring used
-// alternating directions
-#define LED_SERPENTINE
 
-#ifndef LED_SERPENTINE
-#define LED(x,y)  leds[H-(y)-1+H*(x)]
-#else
-#define LED(x,y)  leds[H-((x&1)?(H-(y)-1):(y))-1 + H*(x)]
-#endif
 
 // total display size
 #define H 20
@@ -24,7 +16,15 @@
 #define GAME_CYCLE (1000/FPS)
 
 #define NUM_LEDS (W*H)
-
+// enable LED_SERPENTINE if the stripe wiring used
+// alternating directions
+//#define LED_SERPENTINE
+extern CRGB leds[NUM_LEDS];
+#ifndef LED_SERPENTINE
+#define LED(x,y)  leds[H-(y)-1+H*(x)]
+#else
+#define LED(x,y)  leds[H-((x&1)?(H-(y)-1):(y))-1 + H*(x)]
+#endif
 #define TITLE_SCROLL_SPEED      2
 #define GAME_SCORE_SCROLL_SPEED 5   // frames@60Hz
 
@@ -51,5 +51,7 @@
 #define KEY_DOWN    0x08
 #define KEY_DROP    0x10
 #define KEY_PAUSE   0x20    // generated from key combo
+
+#define EEPROM_MAGIC_MARKER 0x42
 
 #endif // TETRIS_H
