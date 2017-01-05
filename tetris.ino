@@ -277,6 +277,25 @@ void game_tetromino_locked() {
 		game_tetromino_new();
 }
 
+void loadHighScore() {
+
+	if (EEPROM.read(
+			EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS) == EEPROM_MAGIC_MARKER)
+		EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi_score);
+	else {
+		hi_score = 0; // no high score yet
+		EEPROM.write(EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS,
+				EEPROM_MAGIC_MARKER);
+		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, hi_score);
+	}
+}
+
+void clearGameArea() {
+	for (uint8_t x = 0; x < GAME_W / 2; x++)
+		for (uint8_t y = 0; y < GAME_H; y++)
+			game_area[x][y] = 0;
+}
+
 void game_init() {
 	LEDS.clear();
 	LEDS.setBrightness(config_get_brightness());
@@ -285,10 +304,7 @@ void game_init() {
 	// the user has pressed a button since boot time
 	randomSeed(micros());   // init rng
 
-	// clear game area
-	for (uint8_t x = 0; x < GAME_W / 2; x++)
-		for (uint8_t y = 0; y < GAME_H; y++)
-			game_area[x][y] = 0;
+	clearGameArea();
 
 	row_remove = 0;  // no row being removed
 	game_level = INIT_LEVEL;
@@ -297,15 +313,8 @@ void game_init() {
 	game_cont_drop = 0;
 	game_step_cnt = game_level_rate();
 
-	// load hi score from eeprom
-	// check if eeprom marker is valid
-	if (EEPROM.read(0) == EEPROM_MAGIC_MARKER)
-		EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi_score);
-	else {
-		hi_score = 0;            // no high score yet
-		EEPROM.write(0, EEPROM_MAGIC_MARKER);   // write magic marker
-		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, hi_score); // writEEPROM_HI(GHSCORE_ADDRESS,clear) hi score
-	}
+
+	loadHighScore();
 
 	game_show_level();
 
@@ -551,7 +560,7 @@ void setup() {
 		// check if there's a high score in eeprom but no name. In that case
 		// ask the user to set a name. This is for boards that previously had
 		// a firmware that wouldn't let the user set a name
-		if ((EEPROM.read(0) == EEPROM_MAGIC_MARKER) && (EEPROM.read(20) != EEPROM_MAGIC_MARKER)) {
+		if ((EEPROM.read(EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS) == EEPROM_MAGIC_MARKER) && (EEPROM.read(20) != EEPROM_MAGIC_MARKER)) {
 			uint32_t hi;
 			EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi);
 			initials_init(hi);
