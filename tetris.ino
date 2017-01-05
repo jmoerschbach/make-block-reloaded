@@ -300,11 +300,11 @@ void game_init() {
 	// load hi score from eeprom
 	// check if eeprom marker is valid
 	if (EEPROM.read(0) == EEPROM_MAGIC_MARKER)
-		EEPROM.get(1, hi_score);
+		EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi_score);
 	else {
 		hi_score = 0;            // no high score yet
 		EEPROM.write(0, EEPROM_MAGIC_MARKER);   // write magic marker
-		EEPROM.put(1, hi_score); // write (clear) hi score
+		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, hi_score); // writEEPROM_HI(GHSCORE_ADDRESS,clear) hi score
 	}
 
 	game_show_level();
@@ -390,7 +390,7 @@ uint8_t game_process(uint8_t keys) {
 
 			// update high score if necessary
 			if (game_score > hi_score)
-				EEPROM.put(1, game_score); // write new high score
+				EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, game_score); // write new high score
 
 			return 1;
 		}
@@ -553,7 +553,7 @@ void setup() {
 		// a firmware that wouldn't let the user set a name
 		if ((EEPROM.read(0) == EEPROM_MAGIC_MARKER) && (EEPROM.read(20) != EEPROM_MAGIC_MARKER)) {
 			uint32_t hi;
-			EEPROM.get(1, hi);
+			EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi);
 			initials_init(hi);
 			state = STATE_INITIALS;
 		} else {

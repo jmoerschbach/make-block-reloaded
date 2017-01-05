@@ -53,5 +53,6 @@ extern CRGB leds[NUM_LEDS];
 #define KEY_PAUSE   0x20    // generated from key combo
 
 #define EEPROM_MAGIC_MARKER 0x42
+#define EEPROM_HIGHSCORE_ADDRESS 1
 
 #endif // TETRIS_H
