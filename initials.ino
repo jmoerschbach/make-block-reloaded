@@ -15,7 +15,6 @@
 static char initials_str[16]; // 15 chars
 static char initials_score_str[] = "NEW HIGH SCORE: xxxxxxx";
 static int16_t initials_score_len, initials_score_scroll;
-static int16_t initials_x;
 static uint8_t initials_cur_chr;
 static uint8_t initials_when_entered;
 

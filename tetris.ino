@@ -6,6 +6,7 @@
 
 #include <EEPROM.h>
 #include <FastLED.h>
+
 #include "Arduino.h"
 #include "tetris.h"
 
@@ -31,10 +32,10 @@ typedef enum {
 	STATE_CONFIG, STATE_TITLE, STATE_GAME, STATE_SCORE, STATE_INITIALS
 } state_t;
 
-state_t state;
+state_t gameState;
 
 // caution: this does not check for boundaries
-void rect(int8_t x, int8_t y, uint8_t w, uint8_t h, CRGB c) {
+void drawFilledRectangle(int8_t x, int8_t y, uint8_t w, uint8_t h, CRGB c) {
 	for (int8_t i = x; i < x + w; i++)
 		for (int8_t j = y; j < y + h; j++)
 			LED(i,j)= c;
@@ -127,7 +128,7 @@ uint8_t game_level_rate() {
 // show level
 // level: 0-9 = green digit 0-9, 10-19 = yellow digit 0-9, >= 20 = red X
 void game_show_level() {
-	rect(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
+	drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
 	if (game_level < 10)
 		text_draw_char('0' + game_level, LEVEL_X, LEVEL_Y, 0, 3,
 				CRGB(0x00ff00));
@@ -138,18 +139,19 @@ void game_show_level() {
 		text_draw_char('X', LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xff0000));
 }
 
-void game_tetromino_set_block(uint8_t x, uint8_t y, uint8_t col) {
+void setTetrominoBlock(uint8_t x, uint8_t y, uint8_t col) {
 	// we should never draw outside the game area
 	if ((x >= GAME_W) || (y >= GAME_H))
 		return;
 
+	//we store 2 tetrominos per byte (one tetromino needs a nibble)
 	if (x & 1)
 		game_area[x / 2][y] = (game_area[x / 2][y] & 0x0f) | (col << 4);
 	else
 		game_area[x / 2][y] = (game_area[x / 2][y] & 0xf0) | (col & 0x0f);
 }
 
-uint8_t game_tetromino_get_block(uint8_t x, uint8_t y) {
+uint8_t getTetrominoBlock(uint8_t x, uint8_t y) {
 	// return 1 for all blocks outside game area so these seem to be
 	// "occupied" to the game engine. Return 0 for one row above
 	// game area to ease implementation of scrolling down
@@ -169,7 +171,7 @@ void drawTetromino(char show) {
 
 	// set all four blocks a tetromino consists of
 	for (uint8_t i = 0; i < 4; i++)
-		game_tetromino_set_block(tetromino.x + pgm_read_byte(&p[i][0]),
+		setTetrominoBlock(tetromino.x + pgm_read_byte(&p[i][0]),
 				tetromino.y - pgm_read_byte(&p[i][1]),
 				show ? tetromino.type + 1 : 0);
 }
@@ -180,7 +182,7 @@ char isCurrentTetrominoDrawable() {
 
 	// check all four blocks a tetromino consists of
 	for (uint8_t i = 0; i < 4; i++)
-		if (game_tetromino_get_block(tetromino.x + pgm_read_byte(&p[i][0]),
+		if (getTetrominoBlock(tetromino.x + pgm_read_byte(&p[i][0]),
 				tetromino.y - pgm_read_byte(&p[i][1])))
 			return false;
 
@@ -193,7 +195,7 @@ void erasePreviewArea() {
 			LED(PREVIEW_X+x-1, PREVIEW_Y-y)= CRGB::Black;
 		}
 
-void showNextTetromino() {
+void showPreviewOfNextTetromino() {
 	const int8_t (*p)[2] = tetrominos[tetromino.next][0];
 	for (uint8_t i = 0; i < 4; i++)
 		LED(PREVIEW_X+(int8_t)pgm_read_byte(&p[i][0]),
@@ -213,7 +215,7 @@ void createNewTetromino() {
 
 	if (isCurrentTetrominoDrawable()) {
 		drawTetromino(true);
-		showNextTetromino();
+		showPreviewOfNextTetromino();
 	} else {
 // set current tetromino to 0xff indicating that
 // no game is in progress anymore
@@ -221,10 +223,10 @@ void createNewTetromino() {
 		row_remove_timer = 0;
 
 // remove level indicator
-		rect(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
+		drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
 
 // remove score
-		rect(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
+		drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
 	}
 }
 
@@ -269,7 +271,7 @@ void game_tetromino_locked() {
 		// a row is full if no block is empty
 		char isRowComplete = true;
 		for (uint8_t x = 0; x < GAME_W; x++)
-			if (!game_tetromino_get_block(x, y))
+			if (!getTetrominoBlock(x, y))
 				isRowComplete = false;
 
 		if (isRowComplete) {
@@ -337,7 +339,7 @@ void game_init() {
 
 void game_draw_score() {
 	// draw score while game is running
-	if (tetromino.type != 0xff) {
+	if (!isGameFinished()) {
 		static uint8_t pulse_cnt;
 		static uint32_t cur_score = 0;
 		static char score_str[7] = "0";
@@ -373,7 +375,7 @@ void game_draw_score() {
 		static int8_t score_scroll = 0, sub_score_scroll =
 		GAME_SCORE_SCROLL_SPEED;
 		if (sub_score_scroll == 0) {
-			rect(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
+			drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
 			// if only one digit: don't scroll at all
 			// otherwise only scroll up to the last digit and stay
 			// there for a moment
@@ -402,8 +404,8 @@ uint8_t game_process(uint8_t keys) {
 	if (isGameFinished()) {
 		if (row_remove_timer <= GAME_H) {
 			for (uint8_t x = 0; x < GAME_W; x++) {
-				game_tetromino_set_block(x, row_remove_timer - 1, 9);
-				game_tetromino_set_block(x, row_remove_timer, 8);
+				setTetrominoBlock(x, row_remove_timer - 1, 9);
+				setTetrominoBlock(x, row_remove_timer, 8);
 			}
 			row_remove_timer++;
 		} else {
@@ -430,8 +432,8 @@ uint8_t game_process(uint8_t keys) {
 					// shift all lines above down one line
 					while (k < GAME_H) {
 						for (uint8_t x = 0; x < GAME_W; x++)
-							game_tetromino_set_block(x, k,
-									game_tetromino_get_block(x, k + 1));
+							setTetrominoBlock(x, k,
+									getTetrominoBlock(x, k + 1));
 						k++;
 					}
 
@@ -518,7 +520,7 @@ uint8_t game_process(uint8_t keys) {
 			}
 
 			// advance tetromino by gravity
-			if ((tetromino.type != 0xff) && (!--game_step_cnt)) {
+			if ((!isGameFinished()) && (!--game_step_cnt)) {
 				if (!moveTetrominoIfPossible(0, -1, 0))
 					game_tetromino_locked();
 				else
@@ -540,7 +542,7 @@ uint8_t game_process(uint8_t keys) {
 		else {
 			for(uint8_t x=0;x<GAME_W;x++) {
 				LED(x+GAME_X,GAME_Y+y) =
-				CRGB(tetromino_colors[game_tetromino_get_block(x, y)]);
+				CRGB(tetromino_colors[getTetrominoBlock(x, y)]);
 			}
 		}
 	}
@@ -553,9 +555,8 @@ uint8_t game_process(uint8_t keys) {
 unsigned long next_event;
 
 void setup() {
-	//  Serial.begin(9600);
-	//  Serial.println("Tetris");
-
+	  Serial.begin(115200);
+	  Serial.println("Tetris");
 	FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
 
 	pinMode(LED_PIN, OUTPUT);
@@ -570,9 +571,9 @@ void setup() {
 
 	// check if user pressed a button at startup to enter
 	// the config menu
-	if (keys_any_down()) {
+	if (isAnyKeyCurrentlyPressed()) {
 		config_init();
-		state = STATE_CONFIG;
+		gameState = STATE_CONFIG;
 	} else {
 		// check if there's a high score in eeprom but no name. In that case
 		// ask the user to set a name. This is for boards that previously had
@@ -583,11 +584,11 @@ void setup() {
 			uint32_t hi;
 			EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi);
 			initials_init(hi);
-			state = STATE_INITIALS;
+			gameState = STATE_INITIALS;
 		} else {
 			// normal startup
 			title_init();
-			state = STATE_TITLE;
+			gameState = STATE_TITLE;
 		}
 	}
 
@@ -595,7 +596,6 @@ void setup() {
 }
 
 void loop() {
-
 	// frame time hasn't elapsed yet?
 	// the following will also work when millis() wraps (after 49 days :-)
 	if ((long) (next_event - millis()) > 0) {
@@ -615,22 +615,22 @@ void loop() {
 		// config has a faster key repeat for left/right
 		// initials has constant repeat for up/down
 		uint8_t keys = keys_get(
-				(state == STATE_CONFIG) ? 1 :
-				(state == STATE_INITIALS) ? 2 : 0);
+				(gameState == STATE_CONFIG) ? 1 :
+				(gameState == STATE_INITIALS) ? 2 : 0);
 
 		// game state
-		switch (state) {
+		switch (gameState) {
 		case STATE_CONFIG:
 			if (config_process(keys)) {
 				title_init();
-				state = STATE_TITLE;
+				gameState = STATE_TITLE;
 			}
 			break;
 
 		case STATE_TITLE:
 			if (title_process(keys)) {
 				game_init();
-				state = STATE_GAME;
+				gameState = STATE_GAME;
 			}
 			break;
 
@@ -639,10 +639,10 @@ void loop() {
 			if (game_process(keys)) {
 				if (game_score > hi_score) {
 					initials_init(game_score);
-					state = STATE_INITIALS;
+					gameState = STATE_INITIALS;
 				} else {
 					score_init(game_score, game_score > hi_score);
-					state = STATE_SCORE;
+					gameState = STATE_SCORE;
 				}
 				song_process(0);
 			}
@@ -654,13 +654,13 @@ void loop() {
 				// user pressed a key -> jump directly into
 				// next game
 				game_init();
-				state = STATE_GAME;
+				gameState = STATE_GAME;
 				break;
 
 			case 2:
 				// timeout, jump to title screen
 				title_init();
-				state = STATE_TITLE;
+				gameState = STATE_TITLE;
 				break;
 			}
 			break;
@@ -668,7 +668,7 @@ void loop() {
 		case STATE_INITIALS:
 			if (initials_process(keys)) {
 				title_init();
-				state = STATE_TITLE;
+				gameState = STATE_TITLE;
 			}
 			break;
 

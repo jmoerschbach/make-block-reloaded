@@ -97,7 +97,7 @@ void config_init() {
 }
 
 uint8_t config_process(uint8_t keys) {
-  if(!keys_any_down())
+  if(!isAnyKeyCurrentlyPressed())
     config_key_released = true;
 
   if(config_key_released) {
