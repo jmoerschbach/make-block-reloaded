@@ -20,7 +20,7 @@ void keys_init() {
 }
 
 // lock the auto repeat
-void keys_lock() {
+void lockKeys() {
 	for (uint8_t i = 0; i < 5; i++)
 		key_state[i] |= 0xfe;
 }
@@ -37,6 +37,32 @@ bool isKeyCurrentlyPressed(uint8_t key) {
 	return digitalRead(key) == LOW;
 }
 
+bool wasKeyAlreadyPressed(uint8_t indexOfKey) {
+	return (key_state[indexOfKey] & 1) == 1;
+}
+
+bool wasDropPressed() {
+	//if (Wii.wiiUProControllerConnected)
+	//return Wii.getButtonPressed(DOWN);
+	return false;
+}
+
+bool wasLeftPressed() {
+	//if (Wii.wiiUProControllerConnected)
+	//return Wii.getButtonPressed(LEFT);
+	return false;
+}
+
+bool wasRightPressed() {
+	//if (Wii.wiiUProControllerConnected)
+	//return Wii.getButtonPressed(RIGHT);
+	return false;
+}
+
+bool wasAnyKeyPressed() {
+	return wasLeftPressed() || wasRightPressed() || wasDropPressed();
+}
+
 // mode 0 = game, 1 = config, 2 = initials
 uint8_t keys_get(uint8_t mode) {
 	uint8_t ret = 0;
@@ -44,10 +70,10 @@ uint8_t keys_get(uint8_t mode) {
 	// rotate key does not repeat
 	for (uint8_t i = 0; i < 5; i++) {
 		// has key state changed?
-		if ((!digitalRead(key_pins[i])) == (!(key_state[i] & 1))) {
+		if (isKeyCurrentlyPressed(key_pins[i]) == (!wasKeyAlreadyPressed(i))) {
 			key_state[i] &= 1;     // clear all counter bits
 			key_state[i] ^= 1;     // toggle state bit
-			if (key_state[i] & 1) { /* key has just been pressed */
+			if (wasKeyAlreadyPressed(i)) { /* key has just been pressed */
 				ret |= 1 << i;
 
 				// check if down is pressed while up (drop) was already pressed
@@ -58,7 +84,7 @@ uint8_t keys_get(uint8_t mode) {
 								&& isKeyCurrentlyPressed(KEY_DROP_PIN)))
 					ret |= KEY_PAUSE;
 			}
-		} else if (key_state[i] & 1) {
+		} else if (wasKeyAlreadyPressed(i)) {
 			// key is kept pressed. This will cause some repeat on some keys
 
 			// increase counter value in bits 2..7, saturate counter

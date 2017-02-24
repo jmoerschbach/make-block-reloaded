@@ -27,6 +27,9 @@ CRGB leds[NUM_LEDS];
 #define LEVEL_X  11
 #define LEVEL_Y   8
 
+#define GAME_IS_FINISHED 1
+#define GAME_IS_RUNNING 0
+
 // possible game states
 typedef enum {
 	STATE_CONFIG, STATE_TITLE, STATE_GAME, STATE_SCORE, STATE_INITIALS
@@ -258,7 +261,7 @@ char moveTetrominoIfPossible(int8_t x, int8_t y, int8_t rot) {
 
 void game_tetromino_locked() {
 	// lock keys so the have to be released before auto repeat kicks in again
-	keys_lock();
+	lockKeys();
 
 	// any manual drop before placement gives one extra point
 	if (game_cont_drop) {
@@ -338,68 +341,79 @@ void game_init() {
 #define PULSE_STEPS  60
 
 void game_draw_score() {
-	// draw score while game is running
-	if (!isGameFinished()) {
-		static uint8_t pulse_cnt;
-		static uint32_t cur_score = 0;
-		static char score_str[7] = "0";
-		static uint8_t score_len = 3;
-		CRGB color = CRGB::White;
-
-		// let score "pulse" if hi score was exceeded
-		if (game_score <= hi_score) {
-			pulse_cnt = 0;
-			color = CRGB::White;
-		} else {
-			uint8_t shade;
-			pulse_cnt++;
-			if (pulse_cnt < PULSE_STEPS)
-				shade = 255 * pulse_cnt / PULSE_STEPS;
-			else
-				shade = 255 * (2 * PULSE_STEPS - pulse_cnt) / PULSE_STEPS;
-
-			color = CRGB(shade, 255 - shade, 255);
-
-			if (pulse_cnt == 2 * PULSE_STEPS - 1)
-				pulse_cnt = 0;
-		}
-
-		// update score string if necessary
-		if (game_score != cur_score) {
-			ltoa(game_score, score_str, 10);
-			cur_score = game_score;
-			score_len = text_str_len(score_str);
-		}
-
-		// scroll score
-		static int8_t score_scroll = 0, sub_score_scroll =
-		GAME_SCORE_SCROLL_SPEED;
-		if (sub_score_scroll == 0) {
-			drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
-			// if only one digit: don't scroll at all
-			// otherwise only scroll up to the last digit and stay
-			// there for a moment
-			text_scroll(score_str,
-					(score_len == 3) ? 0 :
-					(score_scroll > score_len - 3) ?
-							score_len - 3 : score_scroll,
-					SCORE_X, SCORE_W, SCORE_Y, color);
-			score_scroll++;
-			if (score_scroll == score_len + 20)
-				score_scroll = -5;
-
-			sub_score_scroll = GAME_SCORE_SCROLL_SPEED;
-		} else
-			sub_score_scroll--;
+	if (isGameFinished()) {
+		return;
 	}
+	static uint8_t pulse_cnt;
+	static uint32_t cur_score = 0;
+	static char score_str[7] = "0";
+	static uint8_t score_len = 3;
+	CRGB color = CRGB::White;
+
+	// let score "pulse" if hi score was exceeded
+	if (game_score <= hi_score) {
+		pulse_cnt = 0;
+		color = CRGB::White;
+	} else {
+		uint8_t shade;
+		pulse_cnt++;
+		if (pulse_cnt < PULSE_STEPS)
+			shade = 255 * pulse_cnt / PULSE_STEPS;
+		else
+			shade = 255 * (2 * PULSE_STEPS - pulse_cnt) / PULSE_STEPS;
+
+		color = CRGB(shade, 255 - shade, 255);
+
+		if (pulse_cnt == 2 * PULSE_STEPS - 1)
+			pulse_cnt = 0;
+	}
+
+	// update score string if necessary
+	if (game_score != cur_score) {
+		ltoa(game_score, score_str, 10);
+		cur_score = game_score;
+		score_len = text_str_len(score_str);
+	}
+
+	// scroll score
+	static int8_t score_scroll = 0, sub_score_scroll =
+	GAME_SCORE_SCROLL_SPEED;
+	if (sub_score_scroll == 0) {
+		drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
+		// if only one digit: don't scroll at all
+		// otherwise only scroll up to the last digit and stay
+		// there for a moment
+		text_scroll(score_str,
+				(score_len == 3) ? 0 :
+				(score_scroll > score_len - 3) ? score_len - 3 : score_scroll,
+				SCORE_X, SCORE_W, SCORE_Y, color);
+		score_scroll++;
+		if (score_scroll == score_len + 20)
+			score_scroll = -5;
+
+		sub_score_scroll = GAME_SCORE_SCROLL_SPEED;
+	} else
+		sub_score_scroll--;
 }
 
 bool isGameFinished() {
 	return tetromino.type == 0xff;
 }
 
-uint8_t game_process(uint8_t keys) {
+void saveHighScoreInEeprom() {
+	// update high score if necessary
+	if (game_score > hi_score)
+		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, game_score);
+}
+
+void calculateNewScore(uint8_t numberOfRowsRemoved) {
 	static const uint8_t score_step[] = { 4, 10, 30, 120 };
+	game_score += 10l * score_step[numberOfRowsRemoved - 1] * (game_level + 1);
+	if (game_score > 999999)
+		game_score = 999999;
+}
+
+uint8_t game_process(uint8_t keys) {
 
 	if (isGameFinished()) {
 		if (row_remove_timer <= GAME_H) {
@@ -409,13 +423,9 @@ uint8_t game_process(uint8_t keys) {
 			}
 			row_remove_timer++;
 		} else {
-			// game area is closed ..
 
-			// update high score if necessary
-			if (game_score > hi_score)
-				EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, game_score); // write new high score
-
-			return 1;
+			saveHighScoreInEeprom();
+			return GAME_IS_FINISHED;
 		}
 	} else if (row_remove) {
 		// row removal is in progress
@@ -450,21 +460,14 @@ uint8_t game_process(uint8_t keys) {
 				}
 			}
 
-			// update score
-			game_score += 10l * score_step[numberOfRowsRemoved - 1]
-					* (game_level + 1);
-
-			// limit score to 999999
-			if (game_score > 999999)
-				game_score = 999999;
-
+			calculateNewScore(numberOfRowsRemoved);
 			row_remove = 0;
 			createNewTetromino();
 		}
 	} else {
 		if (keys & KEY_PAUSE) {
 			keys &= ~(KEY_DOWN | KEY_DROP);
-			keys_lock();
+			lockKeys();
 		}
 
 		// advance tetromino manually
@@ -549,14 +552,14 @@ uint8_t game_process(uint8_t keys) {
 
 	game_draw_score();
 
-	return 0;
+	return GAME_IS_RUNNING;
 }
 
 unsigned long next_event;
 
 void setup() {
-	  Serial.begin(115200);
-	  Serial.println("Tetris");
+	Serial.begin(115200);
+	Serial.println("Tetris");
 	FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
 
 	pinMode(LED_PIN, OUTPUT);
@@ -636,7 +639,7 @@ void loop() {
 
 		case STATE_GAME:
 			song_process(game_level + 1);
-			if (game_process(keys)) {
+			if (game_process(keys) == GAME_IS_FINISHED) {
 				if (game_score > hi_score) {
 					initials_init(game_score);
 					gameState = STATE_INITIALS;
