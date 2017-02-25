@@ -286,9 +286,8 @@ void game_tetromino_locked() {
 			row_remove_timer = 90;
 		}
 	}
-
 	// no row removed: spawn new tetromino immediately
-	if (!tableOfFullRows)
+	if (!isAtLeastOneRowCompleted())
 		createNewTetromino();
 }
 
@@ -340,7 +339,7 @@ void game_init() {
 
 #define PULSE_STEPS  60
 
-void game_draw_score() {
+void drawScore() {
 	if (isGameFinished()) {
 		return;
 	}
@@ -458,6 +457,92 @@ bool isAtLeastOneRowCompleted() {
 	return tableOfFullRows > 0;
 }
 
+void runGame(uint8_t keys) {
+	if (keys & KEY_PAUSE) {
+		keys &= ~(KEY_DOWN | KEY_DROP);
+		lockKeys();
+	}
+
+	// advance tetromino manually
+	int8_t x = 0, y = 0, rot = 0;
+	if (keys & KEY_LEFT)
+		x--;
+	if (keys & KEY_RIGHT)
+		x++;
+	if (keys & KEY_ROTATE)
+		rot = -1;
+	if (keys & KEY_DOWN)
+		y = -1;
+
+#ifdef NO_DROP
+	// drop acts like rotate
+	if (keys & KEY_DROP)
+		rot = -1;
+#else
+	// hard drop: a gameboy doesn't do this ... Tanja likes it
+	if(keys & KEY_DROP) {
+		// remoove from current position
+		drawTetromino(false);
+
+		// move down until it cannot be draw anymore
+		do {
+			tetromino.y--;
+			// twice the soft drop score for this
+			game_cont_drop+=2;
+		}while(isCurrentTetrominoDrawable());
+
+		// move up one again
+		tetromino.y++;
+		game_cont_drop-=2;
+		drawTetromino(true);
+
+		game_tetromino_locked();
+	} else
+#endif
+
+	{
+		// do manual movement
+		if (x || rot)
+			moveTetrominoIfPossible(x, 0, rot);
+
+		// y movement needs to be handles seperately since only
+		// this will cause the tetromino to lock
+		if (y) {
+			if (moveTetrominoIfPossible(0, y, 0)) {
+				game_step_cnt = game_level_rate();
+				game_cont_drop++;
+			} else
+				game_tetromino_locked();
+		}
+
+		// advance tetromino by gravity
+		if ((!isGameFinished()) && (!--game_step_cnt)) {
+			if (!moveTetrominoIfPossible(0, -1, 0))
+				game_tetromino_locked();
+			else
+				// clear "continous drop counter" if the tetromino drops by gravity
+				game_cont_drop = 0;
+
+			game_step_cnt = game_level_rate();
+		}
+	}
+}
+
+void drawGameArea() {
+	// blit game_area to screen
+	for (uint8_t y = 0; y < GAME_H; y++) {
+		if (isRowComplete(y) && (row_remove_timer & 16)) {
+			for (uint8_t x = 0; x < GAME_W; x++) {
+				LED(x+GAME_X,GAME_Y+y)= CRGB::White;
+			}
+		} else {
+			for (uint8_t x = 0;x < GAME_W;x++) {
+				LED(x+GAME_X,GAME_Y+y) = CRGB(tetromino_colors[getTetrominoBlock(x, y)]);
+			}
+		}
+	}
+}
+
 uint8_t game_process(uint8_t keys) {
 
 	if (isGameFinished()) {
@@ -476,99 +561,19 @@ uint8_t game_process(uint8_t keys) {
 		game_cont_drop = 0;
 		row_remove_timer--;
 
-		if (!row_remove_timer) {
+		if (row_remove_timer == 0) {
 			uint8_t numberOfRowsRemoved = removeRows();
 			calculateNewScore(numberOfRowsRemoved);
 			tableOfFullRows = 0;
 			createNewTetromino();
 		}
 	} else {
-		if (keys & KEY_PAUSE) {
-			keys &= ~(KEY_DOWN | KEY_DROP);
-			lockKeys();
-		}
-
-		// advance tetromino manually
-		int8_t x = 0, y = 0, rot = 0;
-		if (keys & KEY_LEFT)
-			x--;
-		if (keys & KEY_RIGHT)
-			x++;
-		if (keys & KEY_ROTATE)
-			rot = -1;
-		if (keys & KEY_DOWN)
-			y = -1;
-
-#ifdef NO_DROP
-		// drop acts like rotate
-		if (keys & KEY_DROP)
-			rot = -1;
-#else
-		// hard drop: a gameboy doesn't do this ... Tanja likes it
-		if(keys & KEY_DROP) {
-			// remoove from current position
-			drawTetromino(false);
-
-			// move down until it cannot be draw anymore
-			do {
-				tetromino.y--;
-				// twice the soft drop score for this
-				game_cont_drop+=2;
-			}while(isCurrentTetrominoDrawable());
-
-			// move up one again
-			tetromino.y++;
-			game_cont_drop-=2;
-			drawTetromino(true);
-
-			game_tetromino_locked();
-		} else
-#endif
-
-		{
-			// do manual movement
-			if (x || rot)
-				moveTetrominoIfPossible(x, 0, rot);
-
-			// y movement needs to be handles seperately since only
-			// this will cause the tetromino to lock
-			if (y) {
-				if (moveTetrominoIfPossible(0, y, 0)) {
-					game_step_cnt = game_level_rate();
-					game_cont_drop++;
-				} else
-					game_tetromino_locked();
-			}
-
-			// advance tetromino by gravity
-			if ((!isGameFinished()) && (!--game_step_cnt)) {
-				if (!moveTetrominoIfPossible(0, -1, 0))
-					game_tetromino_locked();
-				else
-					// clear "continous drop counter" if the tetromino drops by gravity
-					game_cont_drop = 0;
-
-				game_step_cnt = game_level_rate();
-			}
-		}
+		runGame(keys);
 	}
 
-	// blit game_area to screen
-	for (uint8_t y = 0; y < GAME_H; y++) {
-		if ((tableOfFullRows & (1 << y)) && (row_remove_timer & 16)) {
-			for (uint8_t x = 0; x < GAME_W; x++) {
-				LED(x+GAME_X,GAME_Y+y)= CRGB::White;
-			}
-		}
-		else {
-			for(uint8_t x=0;x<GAME_W;x++) {
-				LED(x+GAME_X,GAME_Y+y) =
-				CRGB(tetromino_colors[getTetrominoBlock(x, y)]);
-			}
-		}
-	}
+	drawGameArea();
 
-	game_draw_score();
+	drawScore();
 
 	return GAME_IS_RUNNING;
 }
