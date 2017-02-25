@@ -115,7 +115,7 @@ uint16_t game_lines;
 uint8_t game_cont_drop;
 uint32_t hi_score;
 
-uint32_t row_remove;
+uint32_t tableOfFullRows;
 uint8_t row_remove_timer;
 
 uint8_t game_level_rate() {
@@ -279,7 +279,7 @@ void game_tetromino_locked() {
 
 		if (isRowComplete) {
 			// trigger removal of that row
-			row_remove |= (1 << y);
+			tableOfFullRows |= (1 << y);
 
 			// line clear take 90 frames according to
 			// http://tetrisconcept.net/wiki/Tetris_%28Game_Boy%29
@@ -288,7 +288,7 @@ void game_tetromino_locked() {
 	}
 
 	// no row removed: spawn new tetromino immediately
-	if (!row_remove)
+	if (!tableOfFullRows)
 		createNewTetromino();
 }
 
@@ -321,7 +321,7 @@ void game_init() {
 
 	clearGameArea();
 
-	row_remove = 0;  // no row being removed
+	tableOfFullRows = 0;  // no row being removed
 	game_level = INIT_LEVEL;
 	game_lines = 0;
 	game_score = 0;
@@ -413,6 +413,51 @@ void calculateNewScore(uint8_t numberOfRowsRemoved) {
 		game_score = 999999;
 }
 
+uint32_t isRowComplete(uint8_t y) {
+	return tableOfFullRows & (1 << y);
+}
+
+void shiftAboveLinesDown(uint8_t y) {
+	uint8_t k = y;
+	// shift all lines above down one line
+	while (k < GAME_H) {
+		for (uint8_t x = 0; x < GAME_W; x++)
+			setTetrominoBlock(x, k, getTetrominoBlock(x, k + 1));
+		k++;
+	}
+	// also shift table of full rows down
+	tableOfFullRows = (tableOfFullRows & ~(1 << y)) >> 1;
+
+}
+
+void increaseLevel() {
+	game_lines++;
+	if ((game_lines % 10) == 0) {
+		game_level++;
+		game_show_level();
+	}
+}
+
+uint8_t removeRows() {
+	uint8_t numberOfRowsRemoved = 0;
+	// finally remove the full rows
+	for (uint8_t y = 0; y < GAME_H; y++) {
+		if (isRowComplete(y)) {
+			shiftAboveLinesDown(y);
+			numberOfRowsRemoved++;
+			increaseLevel();
+
+			y--; // check same row again
+		}
+	}
+
+	return numberOfRowsRemoved;
+}
+
+bool isAtLeastOneRowCompleted() {
+	return tableOfFullRows > 0;
+}
+
 uint8_t game_process(uint8_t keys) {
 
 	if (isGameFinished()) {
@@ -423,45 +468,18 @@ uint8_t game_process(uint8_t keys) {
 			}
 			row_remove_timer++;
 		} else {
-
 			saveHighScoreInEeprom();
 			return GAME_IS_FINISHED;
 		}
-	} else if (row_remove) {
+	} else if (isAtLeastOneRowCompleted()) {
 		// row removal is in progress
 		game_cont_drop = 0;
 		row_remove_timer--;
 
 		if (!row_remove_timer) {
-			uint8_t numberOfRowsRemoved = 0;
-			// finally remove the full rows
-
-			for (uint8_t y = 0; y < GAME_H; y++) {
-				if (row_remove & (1 << y)) {
-					uint8_t k = y;
-					// shift all lines above down one line
-					while (k < GAME_H) {
-						for (uint8_t x = 0; x < GAME_W; x++)
-							setTetrominoBlock(x, k,
-									getTetrominoBlock(x, k + 1));
-						k++;
-					}
-
-					numberOfRowsRemoved++;
-					game_lines++;
-					if ((game_lines % 10) == 0) {
-						game_level++;
-						game_show_level();
-					}
-
-					// also shift table of full rows down
-					row_remove = (row_remove & ~(1 << y)) >> 1;
-					y--;  // check same row again
-				}
-			}
-
+			uint8_t numberOfRowsRemoved = removeRows();
 			calculateNewScore(numberOfRowsRemoved);
-			row_remove = 0;
+			tableOfFullRows = 0;
 			createNewTetromino();
 		}
 	} else {
@@ -537,7 +555,7 @@ uint8_t game_process(uint8_t keys) {
 
 	// blit game_area to screen
 	for (uint8_t y = 0; y < GAME_H; y++) {
-		if ((row_remove & (1 << y)) && (row_remove_timer & 16)) {
+		if ((tableOfFullRows & (1 << y)) && (row_remove_timer & 16)) {
 			for (uint8_t x = 0; x < GAME_W; x++) {
 				LED(x+GAME_X,GAME_Y+y)= CRGB::White;
 			}
