@@ -6,7 +6,7 @@
 // bit 2-7 = repeat counter
 
 uint8_t key_state[5];
-
+uint8_t ret;
 static const uint8_t key_pins[] = {
 KEY_LEFT_PIN, KEY_RIGHT_PIN, KEY_ROTATE_PIN, KEY_DOWN_PIN,
 KEY_DROP_PIN };
@@ -44,28 +44,40 @@ bool wasKeyAlreadyPressed(uint8_t indexOfKey) {
 bool wasDropPressed() {
 	//if (Wii.wiiUProControllerConnected)
 	//return Wii.getButtonPressed(DOWN);
-	return false;
+	return (ret & KEY_DROP);
+}
+bool wasDownPressed() {
+	return (ret & KEY_DOWN);
 }
 
 bool wasLeftPressed() {
 	//if (Wii.wiiUProControllerConnected)
 	//return Wii.getButtonPressed(LEFT);
-	return false;
+	return (ret & KEY_LEFT);
 }
 
 bool wasRightPressed() {
 	//if (Wii.wiiUProControllerConnected)
 	//return Wii.getButtonPressed(RIGHT);
-	return false;
+	return (ret & KEY_RIGHT);
+}
+
+bool wasRotatePressed() {
+	return (ret & KEY_ROTATE);
+}
+
+bool wasPausePressed() {
+	return (ret & KEY_PAUSE);
 }
 
 bool wasAnyKeyPressed() {
-	return wasLeftPressed() || wasRightPressed() || wasDropPressed();
+	return wasLeftPressed() || wasRightPressed() || wasDropPressed()
+			|| wasRotatePressed();
 }
 
 // mode 0 = game, 1 = config, 2 = initials
 uint8_t keys_get(uint8_t mode) {
-	uint8_t ret = 0;
+	ret = 0;
 
 	// rotate key does not repeat
 	for (uint8_t i = 0; i < 5; i++) {
