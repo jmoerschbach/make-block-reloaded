@@ -459,7 +459,7 @@ bool isAtLeastOneRowCompleted() {
 
 void advanceTetrominoByGravity() {
 	// advance tetromino by gravity
-	if ((!isGameFinished()) && (--game_step_cnt > 0)) {
+	if ((!isGameFinished()) && (--game_step_cnt == 0)) {
 		if (!moveTetrominoIfPossible(0, -1, 0)) {
 			lockTetromino();
 		} else {
