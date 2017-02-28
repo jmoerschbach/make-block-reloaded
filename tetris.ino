@@ -525,7 +525,7 @@ void drawGameArea() {
 	}
 }
 
-uint8_t runTetris(uint8_t keys) {
+uint8_t runTetris() {
 
 	if (isGameFinished()) {
 		if (row_remove_timer <= GAME_H) {
@@ -550,10 +550,6 @@ uint8_t runTetris(uint8_t keys) {
 			createNewTetromino();
 		}
 	} else {
-		if (wasPausePressed()) {
-			keys &= ~(KEY_DOWN | KEY_DROP);
-			lockKeys();
-		}
 
 		advanceTetrominoManually();
 		advanceTetrominoByGravity();
@@ -640,7 +636,7 @@ void loop() {
 			break;
 
 		case STATE_TITLE:
-			if (title_process(keys)) {
+			if (title_process()) {
 				game_init();
 				gameState = STATE_GAME;
 			}
@@ -648,7 +644,7 @@ void loop() {
 
 		case STATE_GAME:
 			song_process(currentLevel + 1);
-			if (runTetris(keys) == GAME_IS_FINISHED) {
+			if (runTetris() == GAME_IS_FINISHED) {
 				if (currentScore > highScore) {
 					initials_init(currentScore);
 					gameState = STATE_INITIALS;

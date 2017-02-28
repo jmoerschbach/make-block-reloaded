@@ -29,16 +29,16 @@ extern CRGB leds[NUM_LEDS];
 #define GAME_SCORE_SCROLL_SPEED 5   // frames@60Hz
 
 // pin mapping
-#define KEY_DROP_PIN     5//7    // should be connected to "up"
-#define KEY_LEFT_PIN     7//5
-#define KEY_RIGHT_PIN    8//6
+#define KEY_DROP_PIN     7    // should be connected to "up"
+#define KEY_LEFT_PIN     5
+#define KEY_RIGHT_PIN    6
 
 #define LED_DATA_PIN    12
 
 #define LED_PIN         13    // arduino on board led
 
 #define AUDIO_PRESCALER  64LU
-#define KEY_DOWN_PIN     6//8
+#define KEY_DOWN_PIN     8
 #define KEY_ROTATE_PIN  11    // should be connected to "fire"
 #define SPEAKER_PIN      9
 #define SPEAKER_PIN_2   10    // second channel option

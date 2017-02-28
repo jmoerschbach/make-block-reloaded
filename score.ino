@@ -14,7 +14,7 @@ void FillLEDsFromPaletteColors(uint8_t y, uint8_t colorIndex) {
   CRGBPalette16 currentPalette = RainbowColors_p;
 
   for( uint8_t x = 0; x < W; x++) {
-    LED(x,y) = 
+    LED(x,y) =
       ColorFromPalette( currentPalette, colorIndex, 255, LINEARBLEND);
     colorIndex += 3;
   }
@@ -43,7 +43,7 @@ uint8_t score_process(uint8_t keys) {
     for(uint8_t y=0;y<5;y++)
       for(uint8_t x=0;x<W;x++)
 	LED(x, SCORE_MSG_Y+y) = CRGB::Black;
-    
+
     text_scroll(score_ptr, score_scroll>>1, 0, W, SCORE_MSG_Y, CRGB::White);
   }
 
@@ -59,7 +59,7 @@ uint8_t score_process(uint8_t keys) {
   score_timeout++;
   uint8_t score_brightness = config_get_brightness();
   if(score_timeout > SCORE_FRAMES) {    // 30 sec
-    // fade out 
+    // fade out
     if((score_timeout <= SCORE_FRAMES+score_brightness)&&
        (SCORE_FRAMES+score_brightness-score_timeout <= score_brightness))
       LEDS.setBrightness(SCORE_FRAMES+score_brightness-score_timeout);
