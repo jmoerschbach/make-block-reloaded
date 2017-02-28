@@ -108,35 +108,40 @@ struct tetromino_S {
 	uint8_t rot, type, next;
 } tetromino;
 
-uint8_t game_step_cnt;
-uint8_t game_level;
+uint8_t gravityStepCounter;
+uint8_t currentLevel;
 uint32_t currentScore;
-uint16_t game_lines;
+uint8_t numberOfRemovedRowsInCurrentLevel;
+/** is increased when player moves tetromino down manually -> added to score*/
 uint8_t continousDropCounter;
-uint32_t hi_score;
+/** the highscore is saved in EEPROM*/
+uint32_t highScore;
 
+/** each bit encodes one row: Bit 0 set: row 0 is completed -> up to 32 rows are supported, we need only 18*/
 uint32_t tableOfFullRows;
 uint8_t row_remove_timer;
+uint32_t next_event;
 
-uint8_t game_level_rate() {
+uint8_t getLevelRate() {
 	// speed table. taken from gameboy version. values in 60Hz steps
 	static const uint8_t step_cnt_table[] PROGMEM =
 	// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
 			{ 53, 49, 45, 41, 37, 33, 28, 22, 17, 11, 10, 9, 8, 7, 6, 6, 5, 5,
 					4, 4, 3 };
 
-	return pgm_read_byte(step_cnt_table + ((game_level < 20) ? game_level : 20));
+	return pgm_read_byte(
+			step_cnt_table + ((currentLevel < 20) ? currentLevel : 20));
 }
 
 // show level
 // level: 0-9 = green digit 0-9, 10-19 = yellow digit 0-9, >= 20 = red X
-void game_show_level() {
+void drawLevel() {
 	drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
-	if (game_level < 10)
-		text_draw_char('0' + game_level, LEVEL_X, LEVEL_Y, 0, 3,
+	if (currentLevel < 10)
+		text_draw_char('0' + currentLevel, LEVEL_X, LEVEL_Y, 0, 3,
 				CRGB(0x00ff00));
-	else if (game_level < 20)
-		text_draw_char('0' + game_level - 10, LEVEL_X, LEVEL_Y, 0, 3,
+	else if (currentLevel < 20)
+		text_draw_char('0' + currentLevel - 10, LEVEL_X, LEVEL_Y, 0, 3,
 				CRGB(0xffff00));
 	else
 		text_draw_char('X', LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xff0000));
@@ -294,12 +299,12 @@ void loadHighScore() {
 
 	if (EEPROM.read(
 	EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS) == EEPROM_MAGIC_MARKER)
-		EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi_score);
+		EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, highScore);
 	else {
-		hi_score = 0; // no high score yet
+		highScore = 0; // no high score yet
 		EEPROM.write(EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS,
 		EEPROM_MAGIC_MARKER);
-		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, hi_score);
+		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, highScore);
 	}
 }
 
@@ -320,15 +325,15 @@ void game_init() {
 	clearGameArea();
 
 	tableOfFullRows = 0;  // no row being removed
-	game_level = INIT_LEVEL;
-	game_lines = 0;
+	currentLevel = INIT_LEVEL;
+	numberOfRemovedRowsInCurrentLevel = 0;
 	currentScore = 0;
 	continousDropCounter = 0;
-	game_step_cnt = game_level_rate();
+	gravityStepCounter = getLevelRate();
 
 	loadHighScore();
 
-	game_show_level();
+	drawLevel();
 
 	// for some reason the first call to random always returns 0 ...
 	tetromino.next = random(0, 7);
@@ -349,7 +354,7 @@ void drawScore() {
 	CRGB color = CRGB::White;
 
 	// let score "pulse" if hi score was exceeded
-	if (currentScore <= hi_score) {
+	if (currentScore <= highScore) {
 		pulse_cnt = 0;
 		color = CRGB::White;
 	} else {
@@ -400,14 +405,14 @@ bool isGameFinished() {
 
 void saveHighScoreInEeprom() {
 	// update high score if necessary
-	if (currentScore > hi_score)
+	if (currentScore > highScore)
 		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, currentScore);
 }
 
 void calculateNewScore(uint8_t numberOfRowsRemoved) {
 	static const uint8_t score_step[] = { 4, 10, 30, 120 };
 	currentScore += 10l * score_step[numberOfRowsRemoved - 1]
-			* (game_level + 1);
+			* (currentLevel + 1);
 	if (currentScore > 999999)
 		currentScore = 999999;
 }
@@ -430,10 +435,11 @@ void shiftAboveLinesDown(uint8_t y) {
 }
 
 void increaseLevel() {
-	game_lines++;
-	if ((game_lines % 10) == 0) {
-		game_level++;
-		game_show_level();
+	numberOfRemovedRowsInCurrentLevel++;
+	if (numberOfRemovedRowsInCurrentLevel == ROWS_PER_LEVEL) {
+		numberOfRemovedRowsInCurrentLevel = 0;
+		currentLevel++;
+		drawLevel();
 	}
 }
 
@@ -459,14 +465,14 @@ bool isAtLeastOneRowCompleted() {
 
 void advanceTetrominoByGravity() {
 	// advance tetromino by gravity
-	if ((!isGameFinished()) && (--game_step_cnt == 0)) {
+	if ((!isGameFinished()) && (--gravityStepCounter == 0)) {
 		if (!moveTetrominoIfPossible(0, -1, 0)) {
 			lockTetromino();
 		} else {
 			// clear "continous drop counter" if the tetromino drops by gravity
 			continousDropCounter = 0;
 		}
-		game_step_cnt = game_level_rate();
+		gravityStepCounter = getLevelRate();
 	}
 }
 
@@ -497,13 +503,12 @@ void advanceTetrominoManually() {
 	// this will cause the tetromino to lock
 	if (y) {
 		if (moveTetrominoIfPossible(0, y, 0)) {
-			game_step_cnt = game_level_rate();
+			gravityStepCounter = getLevelRate();
 			continousDropCounter++;
 		} else
 			lockTetromino();
 	}
 }
-
 
 void drawGameArea() {
 	// blit game_area to screen
@@ -560,8 +565,6 @@ uint8_t runTetris(uint8_t keys) {
 
 	return GAME_IS_RUNNING;
 }
-
-unsigned long next_event;
 
 void setup() {
 	Serial.begin(115200);
@@ -644,13 +647,13 @@ void loop() {
 			break;
 
 		case STATE_GAME:
-			song_process(game_level + 1);
+			song_process(currentLevel + 1);
 			if (runTetris(keys) == GAME_IS_FINISHED) {
-				if (currentScore > hi_score) {
+				if (currentScore > highScore) {
 					initials_init(currentScore);
 					gameState = STATE_INITIALS;
 				} else {
-					score_init(currentScore, currentScore > hi_score);
+					score_init(currentScore, currentScore > highScore);
 					gameState = STATE_SCORE;
 				}
 				song_process(0);
