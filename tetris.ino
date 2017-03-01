@@ -574,30 +574,17 @@ void setup() {
 	// init game cycle counter
 	next_event = millis() + GAME_CYCLE;
 
-	// load config (audio & brightness) from eeprom
-	config_load();
+	loadConfiguration();
 
-	// check if user pressed a button at startup to enter
-	// the config menu
+	//key press at startup -> configuration setup
 	if (isAnyKeyCurrentlyPressed()) {
 		config_init();
 		gameState = STATE_CONFIG;
 	} else {
-		// check if there's a high score in eeprom but no name. In that case
-		// ask the user to set a name. This is for boards that previously had
-		// a firmware that wouldn't let the user set a name
-		if ((EEPROM.read(EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS)
-				== EEPROM_MAGIC_MARKER)
-				&& (EEPROM.read(20) != EEPROM_MAGIC_MARKER)) {
-			uint32_t hi;
-			EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, hi);
-			initials_init(hi);
-			gameState = STATE_INITIALS;
-		} else {
-			// normal startup
-			title_init();
-			gameState = STATE_TITLE;
-		}
+		// normal startup
+		title_init();
+		gameState = STATE_TITLE;
+
 	}
 
 	song_init();
@@ -611,14 +598,6 @@ void loop() {
 
 		delay(1);  // sleep a little bit
 	} else {
-		static uint8_t frame_cnt;
-
-		if (frame_cnt < FPS - 2)
-			digitalWrite(LED_PIN, LOW);
-		else
-			digitalWrite(LED_PIN, HIGH);
-		if (++frame_cnt == FPS)
-			frame_cnt = 0;
 
 		// config has a faster key repeat for left/right
 		// initials has constant repeat for up/down

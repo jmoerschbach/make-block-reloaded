@@ -13,7 +13,7 @@ uint8_t config_brightness;
 bool config_audio;
 bool config_key_released;
 
-void config_load() {
+void loadConfiguration() {
 	// load initial value from eeprom if availble
 	if (EEPROM.read(10) == EEPROM_MAGIC_MARKER) {
 		EEPROM.get(11, config_brightness);
