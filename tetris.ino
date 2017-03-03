@@ -30,6 +30,8 @@ CRGB leds[NUM_LEDS];
 #define GAME_IS_FINISHED 1
 #define GAME_IS_RUNNING 0
 
+#define EMPTY_BLOCK 0
+
 // possible game states
 typedef enum {
 	STATE_CONFIG, STATE_TITLE, STATE_GAME, STATE_SCORE, STATE_INITIALS
@@ -55,6 +57,7 @@ static const uint32_t tetromino_colors[] = { 0x202020, 0x00ffff, 0xffa500,
 		};
 
 /* mapping of tetrominos under all four angles */
+//#Tetrominos, #Angles, #Blocks per Tetromino, #Coordinates
 static const int8_t tetrominos[][4][4][2] PROGMEM = { //
 		{ //
 				{ { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 } }, /* cyan    */
@@ -147,16 +150,17 @@ void drawLevel() {
 		text_draw_char('X', LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xff0000));
 }
 
-void setTetrominoBlock(uint8_t x, uint8_t y, uint8_t col) {
+void setTetrominoBlock(uint8_t x, uint8_t y, uint8_t colorIndex) {
 	// we should never draw outside the game area
 	if ((x >= GAME_W) || (y >= GAME_H))
 		return;
 
 	//we store 2 tetrominos per byte (one tetromino needs a nibble)
 	if (x & 1)
-		game_area[x / 2][y] = (game_area[x / 2][y] & 0x0f) | (col << 4);
+		game_area[x / 2][y] = (game_area[x / 2][y] & 0x0f) | (colorIndex << 4);
 	else
-		game_area[x / 2][y] = (game_area[x / 2][y] & 0xf0) | (col & 0x0f);
+		game_area[x / 2][y] = (game_area[x / 2][y] & 0xf0)
+				| (colorIndex & 0x0f);
 }
 
 uint8_t getTetrominoBlock(uint8_t x, uint8_t y) {
@@ -173,15 +177,16 @@ uint8_t getTetrominoBlock(uint8_t x, uint8_t y) {
 	return game_area[x / 2][y] & 0x0f;
 }
 
-void drawTetromino(char show) {
+void drawTetromino(bool show) {
 	// get pointer to current tetromino shape at current angle
 	int8_t const (*p)[2] = tetrominos[tetromino.type][tetromino.rot];
-
 	// set all four blocks a tetromino consists of
-	for (uint8_t i = 0; i < 4; i++)
+	for (uint8_t i = 0; i < 4; i++) {
+
 		setTetrominoBlock(tetromino.x + pgm_read_byte(&p[i][0]),
 				tetromino.y - pgm_read_byte(&p[i][1]),
-				show ? tetromino.type + 1 : 0);
+				show ? tetromino.type + 1 : 0); //+ 1 because colorArray[0] == Background color, colorArray[1] == color of first tetromino type
+	}
 }
 
 char isCurrentTetrominoDrawable() {
@@ -191,7 +196,7 @@ char isCurrentTetrominoDrawable() {
 	// check all four blocks a tetromino consists of
 	for (uint8_t i = 0; i < 4; i++)
 		if (getTetrominoBlock(tetromino.x + pgm_read_byte(&p[i][0]),
-				tetromino.y - pgm_read_byte(&p[i][1])))
+				tetromino.y - pgm_read_byte(&p[i][1])) != EMPTY_BLOCK)
 			return false;
 
 	return true;
@@ -308,10 +313,10 @@ void loadHighScore() {
 	}
 }
 
-void clearGameArea() {
+void initializeGameArea() {
 	for (uint8_t x = 0; x < GAME_W / 2; x++)
 		for (uint8_t y = 0; y < GAME_H; y++)
-			game_area[x][y] = 0;
+			game_area[x][y] = EMPTY_BLOCK;
 }
 
 void game_init() {
@@ -322,7 +327,7 @@ void game_init() {
 	// the user has pressed a button since boot time
 	randomSeed(micros());   // init rng
 
-	clearGameArea();
+	initializeGameArea();
 
 	tableOfFullRows = 0;  // no row being removed
 	currentLevel = INIT_LEVEL;
@@ -530,6 +535,7 @@ uint8_t runTetris() {
 	if (isGameFinished()) {
 		if (row_remove_timer <= GAME_H) {
 			for (uint8_t x = 0; x < GAME_W; x++) {
+
 				setTetrominoBlock(x, row_remove_timer - 1, 9);
 				setTetrominoBlock(x, row_remove_timer, 8);
 			}
@@ -601,14 +607,13 @@ void loop() {
 
 		// config has a faster key repeat for left/right
 		// initials has constant repeat for up/down
-		uint8_t keys = keys_get(
+		pollKeyStatus(
 				(gameState == STATE_CONFIG) ? 1 :
 				(gameState == STATE_INITIALS) ? 2 : 0);
 
-		// game state
 		switch (gameState) {
 		case STATE_CONFIG:
-			if (config_process(keys)) {
+			if (config_process()) {
 				title_init();
 				gameState = STATE_TITLE;
 			}
@@ -636,7 +641,7 @@ void loop() {
 			break;
 
 		case STATE_SCORE:
-			switch (score_process(keys)) {
+			switch (score_process()) {
 			case 1:
 				// user pressed a key -> jump directly into
 				// next game
@@ -653,7 +658,7 @@ void loop() {
 			break;
 
 		case STATE_INITIALS:
-			if (initials_process(keys)) {
+			if (initials_process()) {
 				title_init();
 				gameState = STATE_TITLE;
 			}

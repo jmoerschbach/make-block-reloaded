@@ -36,7 +36,7 @@ void score_init(uint32_t score, int8_t is_hi) {
 #define SCORE_TIME 30
 #define SCORE_FRAMES  (SCORE_TIME * FPS)
 
-uint8_t score_process(uint8_t keys) {
+uint8_t score_process() {
 
   if(score_scroll & 1) {
     // clear text area
@@ -69,5 +69,5 @@ uint8_t score_process(uint8_t keys) {
       return 2;
   }
 
-  return keys?1:0;
+  return wasAnyKeyPressed();
 }

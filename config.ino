@@ -92,18 +92,18 @@ void config_init() {
 	config_key_released = false;
 }
 
-uint8_t config_process(uint8_t keys) {
+uint8_t config_process() {
 	if (!isAnyKeyCurrentlyPressed())
 		config_key_released = true;
 
 	if (config_key_released) {
 
-		if ((keys & KEY_DROP) && (config_entry > 0)) {
+		if ((wasDropPressed()) && (config_entry > 0)) {
 			config_entry--;
 			lockKeys();      // prevent auto repeat
 		}
 
-		if ((keys & KEY_DOWN) && (config_entry < 2)) {
+		if ((wasDownPressed()) && (config_entry < 2)) {
 			config_entry++;
 			lockKeys();      // prevent auto repeat
 		}
@@ -111,26 +111,26 @@ uint8_t config_process(uint8_t keys) {
 		// handle menu entry
 		switch (config_entry) {
 		case 0:
-			if (keys & KEY_ROTATE)
+			if (wasRotatePressed())
 				config_audio = !config_audio;
 			break;
 
 		case 1:
 			// brightness
-			if ((keys & KEY_LEFT) && (config_brightness > MIN_BRIGHTNESS))
+			if ((wasLeftPressed()) && (config_brightness > MIN_BRIGHTNESS))
 				LEDS.setBrightness(--config_brightness);
 
-			if ((keys & KEY_RIGHT) && (config_brightness < MAX_BRIGHTNESS))
+			if ((wasRightPressed()) && (config_brightness < MAX_BRIGHTNESS))
 				LEDS.setBrightness(++config_brightness);
 			break;
 
 		case 2:
 			// "OK" -> start game
-			if (keys & KEY_ROTATE) {
+			if (wasRotatePressed()) {
 				audio_on(config_audio);
 
 				// save config in eeprom
-				EEPROM.write(10, EEPROM_MAGIC_MARKER);   // write magic marker
+				EEPROM.write(10, EEPROM_MAGIC_MARKER);
 				EEPROM.put(11, config_brightness);
 				EEPROM.put(12, config_audio);
 
@@ -139,8 +139,7 @@ uint8_t config_process(uint8_t keys) {
 			break;
 		}
 
-		if (keys)
-			config_draw_menu(config_entry);
+		config_draw_menu(config_entry);
 	}
 
 	return 0;

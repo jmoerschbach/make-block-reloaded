@@ -76,7 +76,7 @@ bool wasAnyKeyPressed() {
 }
 
 // mode 0 = game, 1 = config, 2 = initials
-uint8_t keys_get(uint8_t mode) {
+uint8_t pollKeyStatus(uint8_t mode) {
 	ret = 0;
 
 	// rotate key does not repeat
