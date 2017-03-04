@@ -1,12 +1,15 @@
 /* 
-   tetris.ino
-   
-   Real tetris for the 15*20 make:block
-*/
+ tetris.ino
+
+ Real tetris for the 15*20 make:block
+ */
 
 #include <EEPROM.h>
 #include <FastLED.h>
+
+#include "Arduino.h"
 #include "tetris.h"
+
 
 #define INIT_LEVEL 0
 
@@ -25,66 +28,75 @@ CRGB leds[NUM_LEDS];
 #define LEVEL_X  11
 #define LEVEL_Y   8
 
-// possible game states
-typedef enum { STATE_CONFIG, STATE_TITLE, 
-	       STATE_GAME, STATE_SCORE, STATE_INITIALS } state_t;
+#define GAME_IS_FINISHED 1
+#define GAME_IS_RUNNING 0
 
-state_t state;
+#define EMPTY_BLOCK 0
+
+// possible game states
+typedef enum {
+	STATE_CONFIG, STATE_TITLE, STATE_GAME, STATE_SCORE, STATE_INITIALS
+} state_t;
+
+state_t gameState;
 
 // caution: this does not check for boundaries
-void rect(int8_t x, int8_t y, uint8_t w, uint8_t h, CRGB c) {
-  for(int8_t i=x;i<x+w;i++)
-    for(int8_t j=y;j<y+h;j++)
-      LED(i,j) = c;
-}
+void drawFilledRectangle(int8_t x, int8_t y, uint8_t w, uint8_t h, CRGB c) {
+	for (int8_t i = x; i < x + w; i++)
+		for (int8_t j = y; j < y + h; j++)
+			LED(i,j)= c;
+		}
 
 // ------- game engine
 
 // colors according to "tetris company standard"
 // up to 16 colors possible with this engine
-static const uint32_t tetromino_colors[] = {
-  0x202020, 0x00ffff, 0xffa500, 0xffff00,   // empty, I, L, O
-  0x4040ff, 0xff0000, 0x00ff00, 0xc000c0,   // J, Z, S, T
-  0xffffff, 0x000000                        // highlight, closed
-};
+static const uint32_t tetromino_colors[] = { 0x202020, 0x00ffff, 0xffa500,
+		0xffff00,   // empty, I, L, O
+		0x4040ff, 0xff0000, 0x00ff00, 0xc000c0,   // J, Z, S, T
+		0xffffff, 0x000000                        // highlight, closed
+		};
 
 /* mapping of tetrominos under all four angles */
-static const int8_t tetrominos[][4][4][2] PROGMEM = {  {  
-  { {-1, 0},{ 0, 0},{ 1, 0},{ 2, 0} },   /* cyan    */
-  { { 0,-1},{ 0, 0},{ 0, 1},{ 0, 2} },   /*  #*##   */
-  { {-1, 0},{ 0, 0},{ 1, 0},{ 2, 0} },   /*         */
-  { { 0,-1},{ 0, 0},{ 0, 1},{ 0, 2} }    /*         */
-}, {  
-  { {-1, 1},{-1, 0},{ 0, 0},{ 1, 0} },   /* orange  */
-  { {-1,-1},{ 0,-1},{ 0, 0},{ 0, 1} },   /*  #*#    */
-  { {-1, 0},{ 0, 0},{ 1, 0},{ 1,-1} },   /*  #      */
-  { { 0,-1},{ 0, 0},{ 0, 1},{ 1, 1} }    /*         */
-}, {  
-  { { 0, 0},{ 1, 0},{ 0, 1},{ 1, 1} },   /* yellow  */
-  { { 0, 0},{ 1, 0},{ 0, 1},{ 1, 1} },   /*   *#    */
-  { { 0, 0},{ 1, 0},{ 0, 1},{ 1, 1} },   /*   ##    */
-  { { 0, 0},{ 1, 0},{ 0, 1},{ 1, 1} }    /*         */
-}, {  
-  { {-1, 0},{ 0, 0},{ 1, 0},{ 1, 1} },   /* blue    */
-  { { 0,-1},{ 0, 0},{ 0, 1},{-1, 1} },   /*  #*#    */
-  { {-1,-1},{-1, 0},{ 0, 0},{ 1, 0} },   /*    #    */
-  { { 1,-1},{ 0,-1},{ 0, 0},{ 0, 1} }    /*         */
-}, {  
-  { {-1, 0},{ 0, 0},{ 0, 1},{ 1, 1} },   /* red     */
-  { { 0,-1},{ 0, 0},{-1, 0},{-1, 1} },   /*  #*     */
-  { {-1, 0},{ 0, 0},{ 0, 1},{ 1, 1} },   /*   ##    */
-  { { 0,-1},{ 0, 0},{-1, 0},{-1, 1} }    /*         */
-}, {  
-  { { 1, 0},{ 0, 0},{ 0, 1},{-1, 1} },   /* green   */
-  { {-1,-1},{-1, 0},{ 0, 0},{ 0, 1} },   /*   *#    */
-  { { 1, 0},{ 0, 0},{ 0, 1},{-1, 1} },   /*  ##     */
-  { {-1,-1},{-1, 0},{ 0, 0},{ 0, 1} }    /*         */
-}, {  
-  { {-1, 0},{ 0, 0},{ 1, 0},{ 0, 1} },   /* purple  */
-  { { 0,-1},{ 0, 0},{-1, 0},{ 0, 1} },   /*  #*#    */
-  { {-1, 0},{ 0, 0},{ 0,-1},{ 1, 0} },   /*   #     */
-  { { 0,-1},{ 0, 0},{ 1, 0},{ 0, 1} }    /*         */
-} };  
+//#Tetrominos, #Angles, #Blocks per Tetromino, #Coordinates
+static const int8_t tetrominos[][4][4][2] PROGMEM = { //
+		{ //
+				{ { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 } }, /* cyan    */
+				{ { 0, -1 }, { 0, 0 }, { 0, 1 }, { 0, 2 } }, /*  #*##   */
+				{ { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 } }, /*         */
+				{ { 0, -1 }, { 0, 0 }, { 0, 1 }, { 0, 2 } } /*         */
+				}, //
+				{ { { -1, 1 }, { -1, 0 }, { 0, 0 }, { 1, 0 } }, /* orange  */
+				{ { -1, -1 }, { 0, -1 }, { 0, 0 }, { 0, 1 } }, /*  #*#    */
+				{ { -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, -1 } }, /*  #      */
+				{ { 0, -1 }, { 0, 0 }, { 0, 1 }, { 1, 1 } } /*         */
+				}, //
+				{ { { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }, /* yellow  */
+				{ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }, /*   *#    */
+				{ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }, /*   ##    */
+				{ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } } /*         */
+				}, //
+				{ { { -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, 1 } }, /* blue    */
+				{ { 0, -1 }, { 0, 0 }, { 0, 1 }, { -1, 1 } }, /*  #*#    */
+				{ { -1, -1 }, { -1, 0 }, { 0, 0 }, { 1, 0 } }, /*    #    */
+				{ { 1, -1 }, { 0, -1 }, { 0, 0 }, { 0, 1 } } /*         */
+				}, //
+				{ { { -1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 } }, /* red     */
+				{ { 0, -1 }, { 0, 0 }, { -1, 0 }, { -1, 1 } }, /*  #*     */
+				{ { -1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 } }, /*   ##    */
+				{ { 0, -1 }, { 0, 0 }, { -1, 0 }, { -1, 1 } } /*         */
+				}, //
+				{ { { 1, 0 }, { 0, 0 }, { 0, 1 }, { -1, 1 } }, /* green   */
+				{ { -1, -1 }, { -1, 0 }, { 0, 0 }, { 0, 1 } }, /*   *#    */
+				{ { 1, 0 }, { 0, 0 }, { 0, 1 }, { -1, 1 } }, /*  ##     */
+				{ { -1, -1 }, { -1, 0 }, { 0, 0 }, { 0, 1 } } /*         */
+				}, //
+				{ { { -1, 0 }, { 0, 0 }, { 1, 0 }, { 0, 1 } }, /* purple  */
+				{ { 0, -1 }, { 0, 0 }, { -1, 0 }, { 0, 1 } }, /*  #*#    */
+				{ { -1, 0 }, { 0, 0 }, { 0, -1 }, { 1, 0 } }, /*   #     */
+				{ { 0, -1 }, { 0, 0 }, { 1, 0 }, { 0, 1 } } /*         */
+				} //
+		};
 
 // standard tetris size as seen on gameboy
 #define GAME_W  10
@@ -93,549 +105,572 @@ static const int8_t tetrominos[][4][4][2] PROGMEM = {  {
 // ------------------- the entire in-game state ------------
 
 // two blocks are saved per byte -> 90 bytes
-uint8_t game_area[GAME_W/2][GAME_H];
+uint8_t game_area[GAME_W / 2][GAME_H];
 
 struct tetromino_S {
-  uint8_t x, y;
-  uint8_t rot, type, next;
+	uint8_t x, y;
+	uint8_t rot, type, next;
 } tetromino;
 
-uint8_t game_step_cnt;
-uint8_t game_level;
-uint32_t game_score;
-uint16_t game_lines;
-uint8_t game_cont_drop;
-uint32_t hi_score;
+uint8_t gravityStepCounter;
+uint8_t currentLevel;
+uint32_t currentScore;
+uint8_t numberOfRemovedRowsInCurrentLevel;
+/** is increased when player moves tetromino down manually -> added to score*/
+uint8_t continousDropCounter;
+/** the highscore is saved in EEPROM*/
+uint32_t highScore;
 
-uint32_t row_remove;
+/** each bit encodes one row: Bit 0 set: row 0 is completed -> up to 32 rows are supported, we need only 18*/
+uint32_t tableOfFullRows;
 uint8_t row_remove_timer;
+uint32_t next_event;
 
-uint8_t game_level_rate() {
-  // speed table. taken from gameboy version. values in 60Hz steps
-  static const uint8_t step_cnt_table[] PROGMEM = 
-    // 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-    { 53,49,45,41,37,33,28,22,17,11,10, 9, 8, 7, 6, 6, 5, 5, 4, 4, 3 }; 
+uint8_t getLevelRate() {
+	// speed table. taken from gameboy version. values in 60Hz steps
+	static const uint8_t step_cnt_table[] PROGMEM =
+	// 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+			{ 53, 49, 45, 41, 37, 33, 28, 22, 17, 11, 10, 9, 8, 7, 6, 6, 5, 5,
+					4, 4, 3 };
 
-  return pgm_read_byte(step_cnt_table+((game_level<20)?game_level:20));
+	return pgm_read_byte(
+			step_cnt_table + ((currentLevel < 20) ? currentLevel : 20));
 }
 
 // show level
 // level: 0-9 = green digit 0-9, 10-19 = yellow digit 0-9, >= 20 = red X
-void game_show_level() {
-  rect(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
-  if(game_level < 10)
-    text_draw_char('0'+game_level, LEVEL_X, LEVEL_Y, 0, 3, CRGB(0x00ff00));
-  else if(game_level < 20)
-    text_draw_char('0'+game_level-10, LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xffff00));
-  else
-    text_draw_char('X', LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xff0000));
+void drawLevel() {
+	drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
+	if (currentLevel < 10)
+		text_draw_char('0' + currentLevel, LEVEL_X, LEVEL_Y, 0, 3,
+				CRGB(0x00ff00));
+	else if (currentLevel < 20)
+		text_draw_char('0' + currentLevel - 10, LEVEL_X, LEVEL_Y, 0, 3,
+				CRGB(0xffff00));
+	else
+		text_draw_char('X', LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xff0000));
 }
 
-void game_tetromino_set_block(uint8_t x, uint8_t y, uint8_t col) {
-  // we should never draw outside the game area
-  if((x >= GAME_W) || (y >= GAME_H))
-    return;
+void setTetrominoBlock(uint8_t x, uint8_t y, uint8_t colorIndex) {
+	// we should never draw outside the game area
+	if ((x >= GAME_W) || (y >= GAME_H))
+		return;
 
-  if(x&1) game_area[x/2][y] = (game_area[x/2][y] & 0x0f) | (col<<4);
-  else    game_area[x/2][y] = (game_area[x/2][y] & 0xf0) | (col&0x0f);
+	//we store 2 tetrominos per byte (one tetromino needs a nibble)
+	if (x & 1)
+		game_area[x / 2][y] = (game_area[x / 2][y] & 0x0f) | (colorIndex << 4);
+	else
+		game_area[x / 2][y] = (game_area[x / 2][y] & 0xf0)
+				| (colorIndex & 0x0f);
 }
 
-uint8_t game_tetromino_get_block(uint8_t x, uint8_t y) {
-  // return 1 for all blocks outside game area so these seem to be
-  // "occupied" to the game engine. Return 0 for one row above 
-  // game area to ease implementation of scrolling down
-  if((x >= GAME_W)||(y > GAME_H)) return 1;
-  if(y == GAME_H) return 0;
+uint8_t getTetrominoBlock(uint8_t x, uint8_t y) {
+	// return 1 for all blocks outside game area so these seem to be
+	// "occupied" to the game engine. Return 0 for one row above
+	// game area to ease implementation of scrolling down
+	if ((x >= GAME_W) || (y > GAME_H))
+		return 1;
+	if (y == GAME_H)
+		return 0;
 
-  if(x&1) return game_area[x/2][y]>>4;
-  return game_area[x/2][y]&0x0f;
+	if (x & 1)
+		return game_area[x / 2][y] >> 4;
+	return game_area[x / 2][y] & 0x0f;
 }
 
-void game_tetromino_draw(char show) {
-  // get pointer to current tetromino shape at current angle
-  int8_t const (*p)[2] = tetrominos[tetromino.type][tetromino.rot];
+void drawTetromino(bool show) {
+	// get pointer to current tetromino shape at current angle
+	int8_t const (*p)[2] = tetrominos[tetromino.type][tetromino.rot];
+	// set all four blocks a tetromino consists of
+	for (uint8_t i = 0; i < 4; i++) {
 
-  // set all four blocks a tetromino consists of
-  for(uint8_t i=0;i<4;i++) 
-    game_tetromino_set_block(tetromino.x + pgm_read_byte(&p[i][0]), 
-			     tetromino.y - pgm_read_byte(&p[i][1]), 
-			     show?tetromino.type+1:0);
+		setTetrominoBlock(tetromino.x + pgm_read_byte(&p[i][0]),
+				tetromino.y - pgm_read_byte(&p[i][1]),
+				show ? tetromino.type + 1 : 0); //+ 1 because colorArray[0] == Background color, colorArray[1] == color of first tetromino type
+	}
 }
 
-char game_tetromino_ok() {
-  // get pointer to current tetromino shape at current angle
-  int8_t const (*p)[2] = tetrominos[tetromino.type][tetromino.rot];
- 
-  // check all four blocks a tetromino consists of
-  for(uint8_t i=0;i<4;i++) 
-    if(game_tetromino_get_block(tetromino.x + pgm_read_byte(&p[i][0]), 
-				tetromino.y - pgm_read_byte(&p[i][1])))
-      return false;
-  
-  return true;
+char isCurrentTetrominoDrawable() {
+	// get pointer to current tetromino shape at current angle
+	int8_t const (*p)[2] = tetrominos[tetromino.type][tetromino.rot];
+
+	// check all four blocks a tetromino consists of
+	for (uint8_t i = 0; i < 4; i++)
+		if (getTetrominoBlock(tetromino.x + pgm_read_byte(&p[i][0]),
+				tetromino.y - pgm_read_byte(&p[i][1])) != EMPTY_BLOCK)
+			return false;
+
+	return true;
 }
 
-void game_tetromino_new() {
-  tetromino.rot = 0;
-  tetromino.type = tetromino.next;
-  tetromino.next = random(0,7);
-  tetromino.x = 4;
+void erasePreviewArea() {
+	for (uint8_t y = 0; y < 2; y++)
+		for (uint8_t x = 0; x < 4; x++)
+			LED(PREVIEW_X+x-1, PREVIEW_Y-y)= CRGB::Black;
+		}
 
-  // on gameboy the tetrominos spawn one row below top 
-  // game area ...
-  tetromino.y = GAME_H-2;
+void showPreviewOfNextTetromino() {
+	const int8_t (*p)[2] = tetrominos[tetromino.next][0];
+	for (uint8_t i = 0; i < 4; i++)
+		LED(PREVIEW_X+(int8_t)pgm_read_byte(&p[i][0]),
+				(PREVIEW_Y-(int8_t)pgm_read_byte(&p[i][1])))= CRGB(tetromino_colors[tetromino.next + 1]);
+	}
 
-  // erase 4*2 preview area
-  for(uint8_t y=0;y<2;y++)
-    for(uint8_t x=0;x<4;x++)
-      LED(PREVIEW_X+x-1, PREVIEW_Y-y) =
-	CRGB::Black;
+void createNewTetromino() {
+	tetromino.rot = 0;
+	tetromino.type = tetromino.next;
+	tetromino.next = random(0, 7);
+	tetromino.x = 4;
+	// on gameboy the tetrominos spawn one row below top
+	// game area ...
+	tetromino.y = GAME_H - 2;
 
-  // check if new tetromino can be placed on screen
-  if(game_tetromino_ok()) {
-    game_tetromino_draw(true);
+	erasePreviewArea();
 
-    // and show next tetromino
-    int8_t const (*p)[2] = tetrominos[tetromino.next][0];
-    for(uint8_t i=0;i<4;i++)
-      LED(PREVIEW_X+(int8_t)pgm_read_byte(&p[i][0]),
-	  (PREVIEW_Y-(int8_t)pgm_read_byte(&p[i][1])))
-	= CRGB(tetromino_colors[tetromino.next+1]);
-  } else {
-    // set current tetromino to 0xff indicating that
-    // no game is in progress anymore
-    tetromino.type = 0xff;
-    row_remove_timer = 0;
+	if (isCurrentTetrominoDrawable()) {
+		drawTetromino(true);
+		showPreviewOfNextTetromino();
+	} else {
+// set current tetromino to 0xff indicating that
+// no game is in progress anymore
+		tetromino.type = 0xff;
+		row_remove_timer = 0;
 
-    // remove level indicator
-    rect(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
+// remove level indicator
+		drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
 
-    // remove score
-    rect(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
-  }
+// remove score
+		drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
+	}
 }
 
 // move tetromino in the given direction or return false
 // if impossible
-char game_tetromino_move(int8_t x, int8_t y, int8_t rot) {
-  char ret = true;
+bool moveTetrominoIfPossible(int8_t x, int8_t y, int8_t rot) {
+	bool couldBeMoved = true;
 
-  // remove current tetromino
-  game_tetromino_draw(false);
+	// remove current tetromino
+	drawTetromino(false);
 
-  // advance tetromino
-  tetromino.x += x;
-  tetromino.y += y;
-  tetromino.rot = (tetromino.rot+rot)&3;
+	// advance tetromino
+	tetromino.x += x;
+	tetromino.y += y;
+	tetromino.rot = (tetromino.rot + rot) & 3;
 
-  // and check if it could be drawn
-  if(!game_tetromino_ok()) {
-    // restore old position
-    tetromino.x -= x;
-    tetromino.y -= y;
-    tetromino.rot = (tetromino.rot-rot)&3;
-    ret = false;
-  }
-    
-  game_tetromino_draw(true);
-  return ret;
+	// and check if it could be drawn
+	if (!isCurrentTetrominoDrawable()) {
+		// restore old position
+		tetromino.x -= x;
+		tetromino.y -= y;
+		tetromino.rot = (tetromino.rot - rot) & 3;
+		couldBeMoved = false;
+	}
+
+	drawTetromino(true);
+	return couldBeMoved;
 }
 
-void game_tetromino_locked() {
-  // lock keys so the have to be released before auto repeat kicks in again
-  keys_lock();
+void checkForCompletedRows() {
+	for (uint8_t y = 0; y < GAME_H; y++) {
+		// a row is full if no block is empty
+		bool isRowComplete = true;
+		for (uint8_t x = 0; x < GAME_W; x++)
+			if (!getTetrominoBlock(x, y))
+				isRowComplete = false;
+		if (isRowComplete) {
+			// trigger removal of that row
+			tableOfFullRows |= (1 << y);
+			// line clear take 90 frames according to
+			// http://tetrisconcept.net/wiki/Tetris_%28Game_Boy%29
+			row_remove_timer = 90;
+		}
+	}
+}
 
-  // any manual drop before placement gives one extra point
-  if(game_cont_drop) {
-    game_score += game_cont_drop;
-    game_cont_drop = 0;
-  }
+void lockTetromino() {
+	// lock keys so the have to be released before auto repeat kicks in again
+	lockKeys();
 
-  // check if a row was filled
-  for(uint8_t y=0;y<GAME_H;y++) {
-    // a row is full if no block is empty
-    char row_full = true;
-    for(uint8_t x=0;x<GAME_W;x++) 
-      if(!game_tetromino_get_block(x, y))
-	row_full = false;
+	// any manual drop before placement gives one extra point
+	currentScore += continousDropCounter;
+	continousDropCounter = 0;
 
-    if(row_full) { 
-      // trigger removal of that row
-      row_remove |= (1<<y);
-    
-      // line clear take 90 frames according to 
-      // http://tetrisconcept.net/wiki/Tetris_%28Game_Boy%29
-      row_remove_timer = 90;
-    }
-  }
+	checkForCompletedRows();
+	// no row removed: spawn new tetromino immediately
+	if (!isAtLeastOneRowCompleted())
+		createNewTetromino();
+}
 
-  // no row removed: spawn new tetromino immediately
-  if(!row_remove)
-    game_tetromino_new();
+void loadHighScore() {
+
+	if (EEPROM.read(
+	EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS) == EEPROM_MAGIC_MARKER)
+		EEPROM.get(EEPROM_HIGHSCORE_ADDRESS, highScore);
+	else {
+		highScore = 0; // no high score yet
+		EEPROM.write(EEPROM_HIGHSCORE_MAGIC_MARKER_ADDRESS,
+		EEPROM_MAGIC_MARKER);
+		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, highScore);
+	}
+}
+
+void initializeGameArea() {
+	for (uint8_t x = 0; x < GAME_W / 2; x++)
+		for (uint8_t y = 0; y < GAME_H; y++)
+			game_area[x][y] = EMPTY_BLOCK;
 }
 
 void game_init() {
-  LEDS.clear();
-  LEDS.setBrightness(config_get_brightness());
+	LEDS.clear();
+	LEDS.setBrightness(config_get_brightness());
 
-  // the microseconds since startup are a perfect seed as 
-  // the user has pressed a button since boot time
-  randomSeed(micros());   // init rng
+	// the microseconds since startup are a perfect seed as
+	// the user has pressed a button since boot time
+	randomSeed(micros());   // init rng
 
-  // clear game area
-  for(uint8_t x=0;x<GAME_W/2;x++)
-    for(uint8_t y=0;y<GAME_H;y++)
-      game_area[x][y] = 0;
- 
-  row_remove = 0;  // no row being removed
-  game_level = INIT_LEVEL;
-  game_lines = 0;
-  game_score = 0;
-  game_cont_drop = 0;
-  game_step_cnt = game_level_rate();
+	initializeGameArea();
 
-  // load hi score from eeprom
-  // check if eeprom marker is valid
-  if(EEPROM.read(0) == 0x42)
-    EEPROM.get(1, hi_score);
-  else {
-    hi_score = 0;            // no high score yet
-    EEPROM.write(0, 0x42);   // write magic marker
-    EEPROM.put(1, hi_score); // write (clear) hi score
-  }
+	tableOfFullRows = 0;  // no row being removed
+	currentLevel = INIT_LEVEL;
+	numberOfRemovedRowsInCurrentLevel = 0;
+	currentScore = 0;
+	continousDropCounter = 0;
+	gravityStepCounter = getLevelRate();
 
-  game_show_level();
+	loadHighScore();
 
-  // for some reason the first call to random always returns 0 ...
-  tetromino.next = random(0,7);
-  tetromino.next = random(0,7);
-  game_tetromino_new();
+	drawLevel();
+
+	// for some reason the first call to random always returns 0 ...
+	tetromino.next = random(0, 7);
+	tetromino.next = random(0, 7);
+	createNewTetromino();
 }
 
 #define PULSE_STEPS  60
 
-void game_draw_score() {
-  // draw score while game is running 
-  if(tetromino.type != 0xff) {
-    static uint8_t pulse_cnt;
-    static uint32_t cur_score = 0;
-    static char score_str[7] = "0";
-    static uint8_t score_len = 3;
-    CRGB color = CRGB::White;
-
-    // let score "pulse" if hi score was exceeded
-    if(game_score <= hi_score) {
-      pulse_cnt = 0;
-      color = CRGB::White;
-    } else {
-      uint8_t shade;
-      pulse_cnt++;
-      if(pulse_cnt < PULSE_STEPS)
-	 shade = 255*pulse_cnt/PULSE_STEPS;
-      else 
-	shade = 255*(2*PULSE_STEPS-pulse_cnt)/PULSE_STEPS;
-
-      color = CRGB(shade, 255-shade, 255);
-
-      if(pulse_cnt == 2*PULSE_STEPS-1)
-	pulse_cnt = 0;
-    }
-
-    // update score string if necessary
-    if(game_score != cur_score) {
-      ltoa(game_score, score_str, 10);
-      cur_score = game_score;
-      score_len = text_str_len(score_str);
-    }
-
-    // scroll score
-    static int8_t score_scroll = 0, sub_score_scroll = GAME_SCORE_SCROLL_SPEED;
-    if(sub_score_scroll == 0) {
-      rect(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
-      // if only one digit: don't scroll at all
-      // otherwise only scroll up to the last digit and stay
-      // there for a moment
-      text_scroll(score_str, (score_len == 3)?0:
-		  (score_scroll > score_len-3)?score_len-3:score_scroll, 
-		  SCORE_X, SCORE_W, SCORE_Y, color);
-      score_scroll++;
-      if(score_scroll == score_len+20)
-	score_scroll = -5;
-      
-      sub_score_scroll = GAME_SCORE_SCROLL_SPEED;
-    } else
-      sub_score_scroll--;
-  }
-}
-
-uint8_t game_process(uint8_t keys) {
-  static const uint8_t score_step[] = { 4, 10, 30, 120 };
-
-  // type == 0xff means game has ended
-  if(tetromino.type == 0xff) {
-    if(row_remove_timer <= GAME_H) {
-      for(uint8_t x=0;x < GAME_W;x++) {
-	game_tetromino_set_block(x, row_remove_timer-1, 9);
-	game_tetromino_set_block(x, row_remove_timer, 8);
-      }
-      row_remove_timer++;
-    } else {
-      // game area is closed ..
-
-      // update high score if necessary
-      if(game_score > hi_score)
-	EEPROM.put(1, game_score); // write new high score
-
-      return 1;
-    }
-  } else if(row_remove) {
-    // row removal is in progress
-    game_cont_drop = 0;
-    row_remove_timer--;
-
-    if(!row_remove_timer) {
-      uint8_t removed = 0;
-      // finally remove the full rows
-
-      for(uint8_t y=0;y<GAME_H;y++) { 
-	if(row_remove & (1<<y)) {
-	  uint8_t k=y;
-	  // shift all lines above down one line
-	  while(k < GAME_H) {
-	    for(uint8_t x=0;x<GAME_W;x++)
-	      game_tetromino_set_block(x, k,
-	       game_tetromino_get_block(x, k+1));
-	    k++;
-	  }
-
-	  removed++;
-	  game_lines++;
-	  if((game_lines % 10) == 0) {
-	    game_level++;
-	    game_show_level();
-	  }
-
-	  // also shift table of full rows down
-	  row_remove = (row_remove & ~(1<<y))>>1;
-	  y--;  // check same row again
+void drawScore() {
+	if (isGameFinished()) {
+		return;
 	}
-      }
+	static uint8_t pulse_cnt;
+	static uint32_t cur_score = 0;
+	static char score_str[7] = "0";
+	static uint8_t score_len = 3;
+	CRGB color = CRGB::White;
 
-      // update score
-      game_score += 10l * score_step[removed-1] * (game_level+1);
+	// let score "pulse" if hi score was exceeded
+	if (currentScore <= highScore) {
+		pulse_cnt = 0;
+		color = CRGB::White;
+	} else {
+		uint8_t shade;
+		pulse_cnt++;
+		if (pulse_cnt < PULSE_STEPS)
+			shade = 255 * pulse_cnt / PULSE_STEPS;
+		else
+			shade = 255 * (2 * PULSE_STEPS - pulse_cnt) / PULSE_STEPS;
 
-      // limit score to 999999
-      if(game_score > 999999)
-        game_score = 999999;
+		color = CRGB(shade, 255 - shade, 255);
 
-      row_remove = 0;
-      game_tetromino_new();
-    }
-  } else {
-    if(keys & KEY_PAUSE) {
-      keys &= ~(KEY_DOWN | KEY_DROP);
-      keys_lock();
-    }
-  
-    // advance tetromino manually
-    int8_t x=0, y=0, rot=0;
-    if(keys & KEY_LEFT)   x--;
-    if(keys & KEY_RIGHT)  x++;
-    if(keys & KEY_ROTATE) rot=-1;
-    if(keys & KEY_DOWN)   y=-1;
+		if (pulse_cnt == 2 * PULSE_STEPS - 1)
+			pulse_cnt = 0;
+	}
 
-#ifdef NO_DROP
-    // drop acts like rotate
-    if(keys & KEY_DROP) 
-      rot=-1;
-#else
-    // hard drop: a gameboy doesn't do this ... Tanja likes it
-    if(keys & KEY_DROP) {
-      // remoove from current position
-      game_tetromino_draw(false);
-      
-      // move down until it cannot be draw anymore
-      do {
-	tetromino.y--;
-	// twice the soft drop score for this
-	game_cont_drop+=2;
-      } while(game_tetromino_ok());
+	// update score string if necessary
+	if (currentScore != cur_score) {
+		ltoa(currentScore, score_str, 10);
+		cur_score = currentScore;
+		score_len = text_str_len(score_str);
+	}
 
-      // move up one again
-      tetromino.y++;
-      game_cont_drop-=2;
-      game_tetromino_draw(true);
+	// scroll score
+	static int8_t score_scroll = 0, sub_score_scroll =
+	GAME_SCORE_SCROLL_SPEED;
+	if (sub_score_scroll == 0) {
+		drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
+		// if only one digit: don't scroll at all
+		// otherwise only scroll up to the last digit and stay
+		// there for a moment
+		text_scroll(score_str,
+				(score_len == 3) ? 0 :
+				(score_scroll > score_len - 3) ? score_len - 3 : score_scroll,
+				SCORE_X, SCORE_W, SCORE_Y, color);
+		score_scroll++;
+		if (score_scroll == score_len + 20)
+			score_scroll = -5;
 
-      game_tetromino_locked();
-    } else 
-#endif
-
-    {
-      // do manual movement
-      if(x || rot)
-	game_tetromino_move(x, 0, rot);
-      
-      // y movement needs to be handles seperately since only
-      // this will cause the tetromino to lock
-      if(y) {
-	if(game_tetromino_move(0, y, 0)) {
-	  game_step_cnt = game_level_rate();
-	  game_cont_drop++;
-	} else 
-	  game_tetromino_locked();
-      }
-      
-      // advance tetromino by gravity
-      if((tetromino.type != 0xff) && (!--game_step_cnt)) {
-	if(!game_tetromino_move(0, -1, 0)) 
-	  game_tetromino_locked();
-	else
-	  // clear "continous drop counter" if the tetromino drops by gravity
-	  game_cont_drop = 0;
-	
-	game_step_cnt = game_level_rate();
-      }
-    }
-  }
-
-  // blit game_area to screen
-  for(uint8_t y=0;y<GAME_H;y++) { 
-    if((row_remove & (1<<y)) && (row_remove_timer & 16))
-      for(uint8_t x=0;x<GAME_W;x++)
-	LED(x+GAME_X,GAME_Y+y) = CRGB::White;
-    else
-      for(uint8_t x=0;x<GAME_W;x++) 
-	LED(x+GAME_X,GAME_Y+y) =
-	  CRGB(tetromino_colors[game_tetromino_get_block(x, y)]);
-  }
-
-  game_draw_score();
-
-  return 0;
+		sub_score_scroll = GAME_SCORE_SCROLL_SPEED;
+	} else
+		sub_score_scroll--;
 }
 
-unsigned long next_event;
+bool isGameFinished() {
+	return tetromino.type == 0xff;
+}
+
+void saveHighScoreInEeprom() {
+	// update high score if necessary
+	if (currentScore > highScore)
+		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, currentScore);
+}
+
+void calculateNewScore(uint8_t numberOfRowsRemoved) {
+	static const uint8_t score_step[] = { 4, 10, 30, 120 };
+	currentScore += 10l * score_step[numberOfRowsRemoved - 1]
+			* (currentLevel + 1);
+	if (currentScore > 999999)
+		currentScore = 999999;
+}
+
+uint32_t isRowComplete(uint8_t y) {
+	return tableOfFullRows & (1 << y);
+}
+
+void shiftAboveLinesDown(uint8_t y) {
+	uint8_t k = y;
+	// shift all lines above down one line
+	while (k < GAME_H) {
+		for (uint8_t x = 0; x < GAME_W; x++)
+			setTetrominoBlock(x, k, getTetrominoBlock(x, k + 1));
+		k++;
+	}
+	// also shift table of full rows down
+	tableOfFullRows = (tableOfFullRows & ~(1 << y)) >> 1;
+
+}
+
+void increaseLevel() {
+	numberOfRemovedRowsInCurrentLevel++;
+	if (numberOfRemovedRowsInCurrentLevel == ROWS_PER_LEVEL) {
+		numberOfRemovedRowsInCurrentLevel = 0;
+		currentLevel++;
+		drawLevel();
+	}
+}
+
+uint8_t removeRows() {
+	uint8_t numberOfRowsRemoved = 0;
+	// finally remove the full rows
+	for (uint8_t y = 0; y < GAME_H; y++) {
+		if (isRowComplete(y)) {
+			shiftAboveLinesDown(y);
+			numberOfRowsRemoved++;
+			increaseLevel();
+
+			y--; // check same row again
+		}
+	}
+
+	return numberOfRowsRemoved;
+}
+
+bool isAtLeastOneRowCompleted() {
+	return tableOfFullRows > 0;
+}
+
+void advanceTetrominoByGravity() {
+	// advance tetromino by gravity
+	if ((!isGameFinished()) && (--gravityStepCounter == 0)) {
+		if (!moveTetrominoIfPossible(0, -1, 0)) {
+			lockTetromino();
+		} else {
+			// clear "continous drop counter" if the tetromino drops by gravity
+			continousDropCounter = 0;
+		}
+		gravityStepCounter = getLevelRate();
+	}
+}
+
+void advanceTetrominoManually() {
+	// advance tetromino manually
+	int8_t x = 0, y = 0, rot = 0;
+	if (wasLeftPressed())
+		x--;
+
+	if (wasRightPressed())
+		x++;
+
+	if (wasRotatePressed())
+		rot = -1;
+
+	if (wasDownPressed())
+		y = -1;
+
+	// drop acts like rotate
+	if (wasDropPressed())
+		rot = -1;
+
+	// do manual movement
+	if (x || rot)
+		moveTetrominoIfPossible(x, 0, rot);
+
+	// y movement needs to be handles seperately since only
+	// this will cause the tetromino to lock
+	if (y) {
+		if (moveTetrominoIfPossible(0, y, 0)) {
+			gravityStepCounter = getLevelRate();
+			continousDropCounter++;
+		} else
+			lockTetromino();
+	}
+}
+
+void drawGameArea() {
+	// blit game_area to screen
+	for (uint8_t y = 0; y < GAME_H; y++) {
+		if (isRowComplete(y) && (row_remove_timer & 16)) {
+			for (uint8_t x = 0; x < GAME_W; x++) {
+				LED(x+GAME_X,GAME_Y+y)= CRGB::White;
+			}
+		} else {
+			for (uint8_t x = 0;x < GAME_W;x++) {
+				LED(x+GAME_X,GAME_Y+y) = CRGB(tetromino_colors[getTetrominoBlock(x, y)]);
+			}
+		}
+	}
+}
+
+uint8_t runTetris() {
+
+	if (isGameFinished()) {
+		if (row_remove_timer <= GAME_H) {
+			for (uint8_t x = 0; x < GAME_W; x++) {
+
+				setTetrominoBlock(x, row_remove_timer - 1, 9);
+				setTetrominoBlock(x, row_remove_timer, 8);
+			}
+			row_remove_timer++;
+		} else {
+			saveHighScoreInEeprom();
+			return GAME_IS_FINISHED;
+		}
+	} else if (isAtLeastOneRowCompleted()) {
+		// row removal is in progress
+		continousDropCounter = 0;
+		row_remove_timer--;
+
+		if (row_remove_timer == 0) {
+			uint8_t numberOfRowsRemoved = removeRows();
+			calculateNewScore(numberOfRowsRemoved);
+			tableOfFullRows = 0;
+			createNewTetromino();
+		}
+	} else {
+
+		advanceTetrominoManually();
+		advanceTetrominoByGravity();
+	}
+
+	drawGameArea();
+
+	drawScore();
+
+	return GAME_IS_RUNNING;
+}
 
 void setup() {
-  //  Serial.begin(9600);
-  //  Serial.println("Tetris");
+	Serial.begin(115200);
+	Serial.println("Tetris");
+	FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
 
-  FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
+	pinMode(LED_PIN, OUTPUT);
+	pinMode(SPEAKER_PIN, OUTPUT);
+	keys_init();
 
-  pinMode(LED_PIN, OUTPUT);     
-  pinMode(SPEAKER_PIN, OUTPUT);     
-  keys_init();
+	// init game cycle counter
+	next_event = millis() + GAME_CYCLE;
 
-  // init game cycle counter
-  next_event = millis() + GAME_CYCLE;
+	loadConfiguration();
 
-  // load config (audio & brightness) from eeprom
-  config_load();
+	//key press at startup -> configuration setup
+	if (isAnyKeyCurrentlyPressed()) {
+		config_init();
+		gameState = STATE_CONFIG;
+	} else {
+		// normal startup
+		title_init();
+		gameState = STATE_TITLE;
 
-  // check if user pressed a button at startup to enter
-  // the config menu 
-  if(keys_any_down()) {
-    config_init();
-    state = STATE_CONFIG;
-  } else {
-    // check if there's a high score in eeprom but no name. In that case
-    // ask the user to set a name. This is for boards that previously had
-    // a firmware that wouldn't let the user set a name
-    if((EEPROM.read(0) == 0x42) && (EEPROM.read(20) != 0x42)) {
-      uint32_t hi;
-      EEPROM.get(1, hi);
-      initials_init(hi);
-      state = STATE_INITIALS;
-    } else {
-      // normal startup
-      title_init();
-      state = STATE_TITLE;
-    }
-  }
+	}
 
-  song_init();
+	song_init();
 }
 
 void loop() {
-
-  // frame time hasn't elapsed yet?
-  // the following will also work when millis() wraps (after 49 days :-)
-  if( (long)(next_event - millis()) > 0 ) {
-    // can do background stuff here like playing music ...
-
-    delay(1);  // sleep a little bit
-  } else {
-    static uint8_t frame_cnt;
-
-    if(frame_cnt < FPS-2) digitalWrite(LED_PIN, LOW);
-    else                  digitalWrite(LED_PIN, HIGH);
-    if(++frame_cnt == FPS)
-      frame_cnt = 0;
-   
-    // config has a faster key repeat for left/right
-    // initials has constant repeat for up/down
-    uint8_t keys = keys_get((state == STATE_CONFIG)?1:(state == STATE_INITIALS)?2:0);
-
-    // game state
-    switch(state) {
-    case STATE_CONFIG:
-      if(config_process(keys)) {
-	title_init();
-	state = STATE_TITLE;
-      }
-      break;
-
-    case STATE_TITLE:
-      if(title_process(keys)) {
-	game_init();
-	state = STATE_GAME;
-      }
-      break;
-      
-    case STATE_GAME:
-      song_process(game_level+1);
-      if(game_process(keys)) {
-	if(game_score > hi_score) {
-	  initials_init(game_score);
-	  state = STATE_INITIALS;
+	// frame time hasn't elapsed yet?
+	// the following will also work when millis() wraps (after 49 days :-)
+	if ((long) (next_event - millis()) > 0) {
+		// can do background stuff here like playing music ...
+		pollKeyStatus(
+						(gameState == STATE_CONFIG) ? 1 :
+						(gameState == STATE_INITIALS) ? 2 : 0);
+		delay(1);  // sleep a little bit
 	} else {
-	  score_init(game_score, game_score > hi_score);
-	  state = STATE_SCORE;
+
+		// config has a faster key repeat for left/right
+		// initials has constant repeat for up/down
+
+
+		switch (gameState) {
+		case STATE_CONFIG:
+			if (config_process()) {
+				title_init();
+				gameState = STATE_TITLE;
+			}
+			break;
+
+		case STATE_TITLE:
+			if (title_process()) {
+				game_init();
+				gameState = STATE_GAME;
+			}
+			break;
+
+		case STATE_GAME:
+			song_process(currentLevel + 1);
+			if (runTetris() == GAME_IS_FINISHED) {
+				if (currentScore > highScore) {
+					initials_init(currentScore);
+					gameState = STATE_INITIALS;
+				} else {
+					score_init(currentScore, currentScore > highScore);
+					gameState = STATE_SCORE;
+				}
+				song_process(0);
+			}
+			break;
+
+		case STATE_SCORE:
+			switch (score_process()) {
+			case 1:
+				// user pressed a key -> jump directly into
+				// next game
+				game_init();
+				gameState = STATE_GAME;
+				break;
+
+			case 2:
+				// timeout, jump to title screen
+				title_init();
+				gameState = STATE_TITLE;
+				break;
+			}
+			break;
+
+		case STATE_INITIALS:
+			if (initials_process()) {
+				title_init();
+				gameState = STATE_TITLE;
+			}
+			break;
+
+		default:
+			break;
+		}
+
+		LEDS.show();
+
+		next_event += GAME_CYCLE;
 	}
-        song_process(0);
-      }
-      break;
-
-    case STATE_SCORE:
-      switch(score_process(keys)) {
-      case 1:
-	// user pressed a key -> jump directly into
-	// next game
-	game_init();
-	state = STATE_GAME;
-	break;
-
-      case 2:
-	// timeout, jump to title screen
-	title_init();
-	state = STATE_TITLE;
-	break;
-      }
-      break;
-
-    case STATE_INITIALS:
-      if(initials_process(keys)) {
-	title_init();
-	state = STATE_TITLE;
-      }
-      break;
-
-    default:
-      break;
-    }
-
-    LEDS.show();
-    
-    next_event += GAME_CYCLE;
-  }
 }
