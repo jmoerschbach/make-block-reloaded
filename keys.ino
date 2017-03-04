@@ -1,6 +1,14 @@
 #include <Arduino.h>
 #include "tetris.h"
+#include <Wii.h>
+#include <usbhub.h>
+USB Usb;
+//USBHub Hub1(&Usb); // Some dongles have a hub inside
 
+BTD Btd(&Usb); // You have to create the Bluetooth Dongle instance like so
+		/* You can create the instance of the class in two ways */
+//WII Wii(&Btd, PAIR); // This will start an inquiry and then pair with your Wiimote - you only have to do this once
+WII Wii(&Btd); // After that you can simply create the instance like so and then press any button on the Wiimote
 // bit 0 = last state
 // bit 1 = repeat state
 // bit 2-7 = repeat counter
@@ -17,6 +25,13 @@ void keys_init() {
 		pinMode(key_pins[i], INPUT_PULLUP);
 		key_state[i] = 0;
 	}
+
+	if (Usb.Init() == -1) {
+		Serial.print(F("\r\nOSC did not start"));
+		while (1)
+			; //halt
+	}
+	Serial.print(F("\r\nWiimote Bluetooth Library Started"));
 }
 
 // lock the auto repeat
@@ -42,28 +57,37 @@ bool wasKeyAlreadyPressed(uint8_t indexOfKey) {
 }
 
 bool wasDropPressed() {
-	//if (Wii.wiiUProControllerConnected)
-	//return Wii.getButtonPressed(DOWN);
-	return (ret & KEY_DROP);
+	if (Wii.wiiUProControllerConnected)
+		return Wii.getButtonClick(A);
+	return false;
+	//return (ret & KEY_DROP);
 }
 bool wasDownPressed() {
-	return (ret & KEY_DOWN);
+	if (Wii.wiiUProControllerConnected)
+		return Wii.getButtonClick(DOWN);
+	return false;
+	//return (ret & KEY_DOWN);
 }
 
 bool wasLeftPressed() {
-	//if (Wii.wiiUProControllerConnected)
-	//return Wii.getButtonPressed(LEFT);
-	return (ret & KEY_LEFT);
+	if (Wii.wiiUProControllerConnected)
+		return Wii.getButtonClick(LEFT);
+	return false;
+	//return (ret & KEY_LEFT);
 }
 
 bool wasRightPressed() {
-	//if (Wii.wiiUProControllerConnected)
-	//return Wii.getButtonPressed(RIGHT);
-	return (ret & KEY_RIGHT);
+	if (Wii.wiiUProControllerConnected)
+		return Wii.getButtonClick(RIGHT);
+	return false;
+	//return (ret & KEY_RIGHT);
 }
 
 bool wasRotatePressed() {
-	return (ret & KEY_ROTATE);
+	if (Wii.wiiUProControllerConnected)
+			return Wii.getButtonClick(UP);
+		return false;
+	//return (ret & KEY_ROTATE);
 }
 
 bool wasPausePressed() {
@@ -77,6 +101,7 @@ bool wasAnyKeyPressed() {
 
 // mode 0 = game, 1 = config, 2 = initials
 uint8_t pollKeyStatus(uint8_t mode) {
+	Usb.Task();
 	ret = 0;
 
 	// rotate key does not repeat

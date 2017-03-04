@@ -10,6 +10,7 @@
 #include "Arduino.h"
 #include "tetris.h"
 
+
 #define INIT_LEVEL 0
 
 CRGB leds[NUM_LEDS];
@@ -601,15 +602,15 @@ void loop() {
 	// the following will also work when millis() wraps (after 49 days :-)
 	if ((long) (next_event - millis()) > 0) {
 		// can do background stuff here like playing music ...
-
+		pollKeyStatus(
+						(gameState == STATE_CONFIG) ? 1 :
+						(gameState == STATE_INITIALS) ? 2 : 0);
 		delay(1);  // sleep a little bit
 	} else {
 
 		// config has a faster key repeat for left/right
 		// initials has constant repeat for up/down
-		pollKeyStatus(
-				(gameState == STATE_CONFIG) ? 1 :
-				(gameState == STATE_INITIALS) ? 2 : 0);
+
 
 		switch (gameState) {
 		case STATE_CONFIG:
