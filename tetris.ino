@@ -10,7 +10,6 @@
 #include "Arduino.h"
 #include "tetris.h"
 
-
 #define INIT_LEVEL 0
 
 CRGB leds[NUM_LEDS];
@@ -24,6 +23,7 @@ CRGB leds[NUM_LEDS];
 #define SCORE_X 11
 #define SCORE_Y  1
 #define SCORE_W  4
+#define SCORE_H  5
 
 #define LEVEL_X  11
 #define LEVEL_Y   8
@@ -35,7 +35,12 @@ CRGB leds[NUM_LEDS];
 
 // possible game states
 typedef enum {
-	STATE_CONFIG, STATE_TITLE, STATE_GAME, STATE_SCORE, STATE_INITIALS
+	STATE_CONFIG,
+	STATE_TITLE,
+	STATE_GAME,
+	STATE_SCORE,
+	STATE_INITIALS,
+	STATE_PAUSED
 } state_t;
 
 state_t gameState;
@@ -224,23 +229,28 @@ void createNewTetromino() {
 	// on gameboy the tetrominos spawn one row below top
 	// game area ...
 	tetromino.y = GAME_H - 2;
+}
 
+void finishGame() {
+	// set current tetromino to 0xff indicating that
+	// no game is in progress anymore
+	tetromino.type = 0xff;
+	row_remove_timer = 0;
+	// remove level indicator
+	drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
+	// remove score
+	drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, SCORE_H, CRGB::Black);
+}
+
+void createAndShowNewTetromino() {
+	createNewTetromino();
 	erasePreviewArea();
 
 	if (isCurrentTetrominoDrawable()) {
 		drawTetromino(true);
 		showPreviewOfNextTetromino();
 	} else {
-// set current tetromino to 0xff indicating that
-// no game is in progress anymore
-		tetromino.type = 0xff;
-		row_remove_timer = 0;
-
-// remove level indicator
-		drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
-
-// remove score
-		drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
+		finishGame();
 	}
 }
 
@@ -298,7 +308,7 @@ void lockTetromino() {
 	checkForCompletedRows();
 	// no row removed: spawn new tetromino immediately
 	if (!isAtLeastOneRowCompleted())
-		createNewTetromino();
+		createAndShowNewTetromino();
 }
 
 void loadHighScore() {
@@ -320,7 +330,7 @@ void initializeGameArea() {
 			game_area[x][y] = EMPTY_BLOCK;
 }
 
-void game_init() {
+void initGame() {
 	LEDS.clear();
 	LEDS.setBrightness(config_get_brightness());
 
@@ -344,15 +354,13 @@ void game_init() {
 	// for some reason the first call to random always returns 0 ...
 	tetromino.next = random(0, 7);
 	tetromino.next = random(0, 7);
-	createNewTetromino();
+	createAndShowNewTetromino();
 }
 
 #define PULSE_STEPS  60
 
 void drawScore() {
-	if (isGameFinished()) {
-		return;
-	}
+
 	static uint8_t pulse_cnt;
 	static uint32_t cur_score = 0;
 	static char score_str[7] = "0";
@@ -388,7 +396,7 @@ void drawScore() {
 	static int8_t score_scroll = 0, sub_score_scroll =
 	GAME_SCORE_SCROLL_SPEED;
 	if (sub_score_scroll == 0) {
-		drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, 5, CRGB::Black);
+		drawFilledRectangle(SCORE_X, SCORE_Y, SCORE_W, SCORE_H, CRGB::Black);
 		// if only one digit: don't scroll at all
 		// otherwise only scroll up to the last digit and stay
 		// there for a moment
@@ -409,8 +417,7 @@ bool isGameFinished() {
 	return tetromino.type == 0xff;
 }
 
-void saveHighScoreInEeprom() {
-	// update high score if necessary
+void saveHighScore() {
 	if (currentScore > highScore)
 		EEPROM.put(EEPROM_HIGHSCORE_ADDRESS, currentScore);
 }
@@ -423,7 +430,7 @@ void calculateNewScore(uint8_t numberOfRowsRemoved) {
 		currentScore = 999999;
 }
 
-uint32_t isRowComplete(uint8_t y) {
+bool isRowComplete(uint8_t y) {
 	return tableOfFullRows & (1 << y);
 }
 
@@ -542,7 +549,7 @@ uint8_t runTetris() {
 			}
 			row_remove_timer++;
 		} else {
-			saveHighScoreInEeprom();
+			saveHighScore();
 			return GAME_IS_FINISHED;
 		}
 	} else if (isAtLeastOneRowCompleted()) {
@@ -554,7 +561,7 @@ uint8_t runTetris() {
 			uint8_t numberOfRowsRemoved = removeRows();
 			calculateNewScore(numberOfRowsRemoved);
 			tableOfFullRows = 0;
-			createNewTetromino();
+			createAndShowNewTetromino();
 		}
 	} else {
 
@@ -569,48 +576,21 @@ uint8_t runTetris() {
 	return GAME_IS_RUNNING;
 }
 
-void setup() {
-	Serial.begin(115200);
-	Serial.println("Tetris");
-	FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
-
-	pinMode(LED_PIN, OUTPUT);
-	pinMode(SPEAKER_PIN, OUTPUT);
-	keys_init();
-
-	// init game cycle counter
-	next_event = millis() + GAME_CYCLE;
-
-	loadConfiguration();
-
-	//key press at startup -> configuration setup
-	if (isAnyKeyCurrentlyPressed()) {
-		config_init();
-		gameState = STATE_CONFIG;
-	} else {
-		// normal startup
-		title_init();
-		gameState = STATE_TITLE;
-
-	}
-
-	song_init();
+void pauseGame() {
+	gameState = STATE_PAUSED;
 }
 
-void loop() {
+void loopTetris() {
 	// frame time hasn't elapsed yet?
 	// the following will also work when millis() wraps (after 49 days :-)
 	if ((long) (next_event - millis()) > 0) {
 		// can do background stuff here like playing music ...
-		pollKeyStatus(
-						(gameState == STATE_CONFIG) ? 1 :
-						(gameState == STATE_INITIALS) ? 2 : 0);
+
 		delay(1);  // sleep a little bit
 	} else {
 
 		// config has a faster key repeat for left/right
 		// initials has constant repeat for up/down
-
 
 		switch (gameState) {
 		case STATE_CONFIG:
@@ -622,7 +602,7 @@ void loop() {
 
 		case STATE_TITLE:
 			if (title_process()) {
-				game_init();
+				initGame();
 				gameState = STATE_GAME;
 			}
 			break;
@@ -639,6 +619,8 @@ void loop() {
 				}
 				song_process(0);
 			}
+			if (wasPausePressed())
+				gameState = STATE_PAUSED;
 			break;
 
 		case STATE_SCORE:
@@ -646,7 +628,7 @@ void loop() {
 			case 1:
 				// user pressed a key -> jump directly into
 				// next game
-				game_init();
+				initGame();
 				gameState = STATE_GAME;
 				break;
 
@@ -664,7 +646,10 @@ void loop() {
 				gameState = STATE_TITLE;
 			}
 			break;
-
+		case STATE_PAUSED:
+			if (wasPausePressed())
+				gameState = STATE_GAME;
+			break;
 		default:
 			break;
 		}
@@ -673,4 +658,28 @@ void loop() {
 
 		next_event += GAME_CYCLE;
 	}
+
+}
+void initTetris() {
+	pinMode(LED_PIN, OUTPUT);
+	pinMode(SPEAKER_PIN, OUTPUT);
+	initKeys();
+
+	// init game cycle counter
+	next_event = millis() + GAME_CYCLE;
+
+	loadConfiguration();
+
+	//key press at startup -> configuration setup
+	if (wasAnyKeyPressed()) {
+		config_init();
+		gameState = STATE_CONFIG;
+	} else {
+		// normal startup
+		title_init();
+		gameState = STATE_TITLE;
+
+	}
+
+	song_init();
 }
