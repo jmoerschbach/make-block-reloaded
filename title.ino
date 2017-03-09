@@ -8,7 +8,7 @@ uint8_t title_logo_fade;
 // horizontal split/shift 
 static void image_in(const unsigned char *p, uint8_t o) {
 	// load logo
-	for (uint8_t x = 0; x < W; x++) {
+	for (uint8_t x = 0; x < W-1; x++) {
 		for (uint8_t y = 0; y < H; y++) {
 			int src;
 			if (y & 1)

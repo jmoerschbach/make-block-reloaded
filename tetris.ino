@@ -12,8 +12,6 @@
 
 #define INIT_LEVEL 0
 
-CRGB leds[NUM_LEDS];
-
 #define GAME_X     0
 #define GAME_Y     1
 
@@ -41,9 +39,9 @@ typedef enum {
 	STATE_SCORE,
 	STATE_INITIALS,
 	STATE_PAUSED
-} state_t;
+} tetris_state_t;
 
-state_t gameState;
+tetris_state_t gameState;
 
 // caution: this does not check for boundaries
 void drawFilledRectangle(int8_t x, int8_t y, uint8_t w, uint8_t h, CRGB c) {
@@ -584,93 +582,86 @@ void loopTetris() {
 	// frame time hasn't elapsed yet?
 	// the following will also work when millis() wraps (after 49 days :-)
 	if ((long) (next_event - millis()) > 0) {
-		// can do background stuff here like playing music ...
-
-		delay(1);  // sleep a little bit
-	} else {
-
-		// config has a faster key repeat for left/right
-		// initials has constant repeat for up/down
-
-		switch (gameState) {
-		case STATE_CONFIG:
-			if (config_process()) {
-				title_init();
-				gameState = STATE_TITLE;
-			}
-			break;
-
-		case STATE_TITLE:
-			if (title_process()) {
-				initGame();
-				gameState = STATE_GAME;
-			}
-			break;
-
-		case STATE_GAME:
-			song_process(currentLevel + 1);
-			if (runTetris() == GAME_IS_FINISHED) {
-				if (currentScore > highScore) {
-					initials_init(currentScore);
-					gameState = STATE_INITIALS;
-				} else {
-					score_init(currentScore, currentScore > highScore);
-					gameState = STATE_SCORE;
-				}
-				song_process(0);
-			}
-			if (wasPausePressed())
-				gameState = STATE_PAUSED;
-			break;
-
-		case STATE_SCORE:
-			switch (score_process()) {
-			case 1:
-				// user pressed a key -> jump directly into
-				// next game
-				initGame();
-				gameState = STATE_GAME;
-				break;
-
-			case 2:
-				// timeout, jump to title screen
-				title_init();
-				gameState = STATE_TITLE;
-				break;
-			}
-			break;
-
-		case STATE_INITIALS:
-			if (initials_process()) {
-				title_init();
-				gameState = STATE_TITLE;
-			}
-			break;
-		case STATE_PAUSED:
-			if (wasPausePressed())
-				gameState = STATE_GAME;
-			break;
-		default:
-			break;
-		}
-
-		LEDS.show();
-
-		next_event += GAME_CYCLE;
+		return;
 	}
 
+	switch (gameState) {
+	case STATE_CONFIG:
+		if (config_process()) {
+			title_init();
+			gameState = STATE_TITLE;
+		}
+		break;
+
+	case STATE_TITLE:
+		if (title_process()) {
+			initGame();
+			gameState = STATE_GAME;
+		}
+		break;
+
+	case STATE_GAME:
+		song_process(currentLevel + 1);
+		if (runTetris() == GAME_IS_FINISHED) {
+			if (currentScore > highScore) {
+				initials_init(currentScore);
+				gameState = STATE_INITIALS;
+			} else {
+				score_init(currentScore, currentScore > highScore);
+				gameState = STATE_SCORE;
+			}
+			song_process(0);
+		}
+		if (wasPausePressed())
+			gameState = STATE_PAUSED;
+		break;
+
+	case STATE_SCORE:
+		switch (score_process()) {
+		case 1:
+			// user pressed a key -> jump directly into
+			// next game
+			initGame();
+			gameState = STATE_GAME;
+			break;
+
+		case 2:
+			// timeout, jump to title screen
+			title_init();
+			gameState = STATE_TITLE;
+			break;
+		}
+		break;
+
+	case STATE_INITIALS:
+		if (initials_process()) {
+			title_init();
+			gameState = STATE_TITLE;
+		}
+		break;
+	case STATE_PAUSED:
+		if (wasPausePressed())
+			gameState = STATE_GAME;
+		break;
+	default:
+		break;
+	}
+
+	LEDS.show();
+
+	next_event += GAME_CYCLE;
 }
+
 void initTetris() {
-	pinMode(LED_PIN, OUTPUT);
 	pinMode(SPEAKER_PIN, OUTPUT);
 	initKeys();
 
-	// init game cycle counter
+// init game cycle counter
 	next_event = millis() + GAME_CYCLE;
 
 	loadConfiguration();
 
-	//key press at startup -> configuration setup
+//key press at startup -> configuration setup
 	if (wasAnyKeyPressed()) {
 		config_init();
 		gameState = STATE_CONFIG;
