@@ -5,7 +5,6 @@
 #include <FastLED.h>
 #include <EEPROM.h>
 #include "../hmi/keys.h"
-#include "audio.h"
 #include "tetris.h"
 #define MIN_BRIGHTNESS  16   // too dark would be bad as config itself becomes invisible
 #define MAX_BRIGHTNESS  255
@@ -24,7 +23,6 @@ void loadConfiguration() {
 		config_audio = true;      // default audio is on
 	}
 
-	audio_on(config_audio);
 }
 
 static const uint8_t audio_on_icon[] PROGMEM = { 0x0c, 0x0c, 0x1e, 0x3f, 0x3f,
@@ -128,7 +126,6 @@ uint8_t config_process() {
 		case 2:
 			// "OK" -> start game
 			if (wasRotatePressed()) {
-				audio_on(config_audio);
 
 				// save config in eeprom
 				EEPROM.write(10, EEPROM_MAGIC_MARKER);
