@@ -3,8 +3,10 @@
 */
 
 #include <FastLED.h>
-#include "tetris.h"
 
+#include "config.h"
+#include "tetris.h"
+#include "text.h"
 static char score_msg[] = "NEW HI SCORE: xxxxxxx";
 static char *score_ptr;
 static int16_t score_len, score_scroll;

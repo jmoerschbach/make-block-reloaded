@@ -4,11 +4,18 @@
  Real tetris for the 15*20 make:block
  */
 
+#include "tetris.h"
+
 #include <EEPROM.h>
 #include <FastLED.h>
 
 #include "Arduino.h"
-#include "tetris.h"
+
+#include "config.h"
+#include "initials.h"
+#include "score.h"
+#include "text.h"
+#include "title.h"
 
 #define INIT_LEVEL 0
 
@@ -294,7 +301,9 @@ void checkForCompletedRows() {
 		}
 	}
 }
-
+bool isAtLeastOneRowCompleted() {
+	return tableOfFullRows > 0;
+}
 void lockTetromino() {
 	// lock keys so the have to be released before auto repeat kicks in again
 	lockKeys();
@@ -470,9 +479,7 @@ uint8_t removeRows() {
 	return numberOfRowsRemoved;
 }
 
-bool isAtLeastOneRowCompleted() {
-	return tableOfFullRows > 0;
-}
+
 
 void advanceTetrominoByGravity() {
 	// advance tetromino by gravity
@@ -601,7 +608,7 @@ void loopTetris() {
 		break;
 
 	case STATE_GAME:
-		song_process(currentLevel + 1);
+		//song_process(currentLevel + 1);
 		if (runTetris() == GAME_IS_FINISHED) {
 			if (currentScore > highScore) {
 				initials_init(currentScore);
@@ -610,7 +617,7 @@ void loopTetris() {
 				score_init(currentScore, currentScore > highScore);
 				gameState = STATE_SCORE;
 			}
-			song_process(0);
+			//song_process(0);
 		}
 		if (wasPausePressed())
 			gameState = STATE_PAUSED;
@@ -672,5 +679,5 @@ void initTetris() {
 
 	}
 
-	song_init();
+	//song_init();
 }

@@ -1,9 +1,8 @@
-// song.ino
-
+#include "audio.h"
 // when using 16 bit timer 1 the values exceed 255 and we need to add
 // an offset to store the ocr values in bytes
 #define AUDIO_OFF 128
-
+#define AUDIO_PRESCALER  64LU
 // convert frequencies to timer values
 #define FREQ2OCR(a) ((int)(F_CPU/(2*AUDIO_PRESCALER*(a))-0.5)-AUDIO_OFF)
 

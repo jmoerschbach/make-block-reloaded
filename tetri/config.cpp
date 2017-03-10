@@ -4,8 +4,9 @@
 
 #include <FastLED.h>
 #include <EEPROM.h>
+#include "../hmi/keys.h"
+#include "audio.h"
 #include "tetris.h"
-
 #define MIN_BRIGHTNESS  16   // too dark would be bad as config itself becomes invisible
 #define MAX_BRIGHTNESS  255
 

@@ -2,8 +2,9 @@
 #include <FastLED.h>
 #include "Arduino.h"
 #include "WallGame.h"
-#include "tetris.h"
-#include "Snake.h"
+#include "snake/snake.h"
+#include "hmi/keys.h"
+#include "tetri/tetris.h"
 CRGB leds[NUM_LEDS];
 
 // possible game states

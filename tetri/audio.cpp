@@ -26,20 +26,20 @@ void audio_init() {
   // A5:  OCR=141, FREQ = 880.28 -> 0.03% error
   
   // COM1A1=0, COM1A0=1, WGM11=0, WGM10=0
-  TCCR1A = 0;
+ // TCCR1A = 0;
   
   // WGM13=0, WGN12=1, CS12=0, CS11=1, CS10=1 (CS=3:64, CS=2:8)
-  TCCR1B = (1<<WGM12) | (1<<CS11) | (1<<CS10);
+ // TCCR1B = (1<<WGM12) | (1<<CS11) | (1<<CS10);
 
-  TCCR1C = 0;
+  //TCCR1C = 0;
 }
 
-void audio_set(uint8_t ocr) {
-  if((ocr==128) || !audio_is_enabled)
-    TCCR1A = 0;              // output off
-  else {
-    TCCR1A = (1<<COM1A0);    // ocr toggle mode
-    TCNT1 = 0;
-    OCR1A = ocr;
-  }
-}
+//void audio_set(uint8_t ocr) {
+//  if((ocr==128) || !audio_is_enabled)
+//    TCCR1A = 0;              // output off
+//  else {
+//    TCCR1A = (1<<COM1A0);    // ocr toggle mode
+//    TCNT1 = 0;
+//    OCR1A = ocr;
+//  }
+//}

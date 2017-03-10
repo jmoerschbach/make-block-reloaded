@@ -4,7 +4,10 @@
 
 #include <FastLED.h>
 #include <EEPROM.h>
+
+#include "config.h"
 #include "tetris.h"
+#include "text.h"
 
 #define INITIALS_BACK  1
 #define INITIALS_DONE  2
@@ -55,7 +58,7 @@ void initials_entry_draw() {
 
 void initials_init(uint32_t score) {
 	LEDS.clear();
-	LEDS.setBrightness(config_brightness);
+	LEDS.setBrightness(config_get_brightness());
 
 	// load previous name from eeprom
 	// this is stored from byte 20 to 36

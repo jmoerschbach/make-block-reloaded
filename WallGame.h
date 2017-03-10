@@ -7,6 +7,7 @@
 
 #ifndef WALLGAME_H_
 #define WALLGAME_H_
+#include <FastLED.h>
 // total display size
 #define H 20
 #define W 16
