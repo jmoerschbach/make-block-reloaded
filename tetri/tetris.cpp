@@ -14,7 +14,7 @@
 #include "config.h"
 #include "initials.h"
 #include "score.h"
-#include "text.h"
+#include "../hmi/text.h"
 #include "title.h"
 
 #define INIT_LEVEL 0
@@ -341,9 +341,7 @@ void initGame() {
 	LEDS.clear();
 	LEDS.setBrightness(config_get_brightness());
 
-	// the microseconds since startup are a perfect seed as
-	// the user has pressed a button since boot time
-	randomSeed(micros());   // init rng
+
 
 	initializeGameArea();
 

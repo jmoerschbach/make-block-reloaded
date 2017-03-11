@@ -7,7 +7,7 @@
 
 #include "config.h"
 #include "tetris.h"
-#include "text.h"
+#include "../hmi/text.h"
 
 #define INITIALS_BACK  1
 #define INITIALS_DONE  2

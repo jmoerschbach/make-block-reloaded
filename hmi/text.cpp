@@ -1,6 +1,6 @@
 #include <FastLED.h>
 
-#include "tetris.h"
+#include "../WallGame.h"
 
 // extremely tiny font
 const uint8_t font[][5] PROGMEM = {

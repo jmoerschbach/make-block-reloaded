@@ -18,6 +18,9 @@ void setup() {
 	Serial.println("Tetris");
 	FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
 
+	// the microseconds since startup are a perfect seed as
+	// the user has pressed a button since boot time
+	randomSeed(micros());   // init rng
 	wallGameState = STATE_TETRIS;
 
 	initTetris();
