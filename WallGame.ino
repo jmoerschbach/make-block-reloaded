@@ -5,7 +5,9 @@
 #include "snake/snake.h"
 #include "hmi/keys.h"
 #include "tetri/tetris.h"
+#include "snake/SnakeGame.h"
 CRGB leds[NUM_LEDS];
+SnakeGame snake;
 
 // possible game states
 typedef enum {
@@ -17,12 +19,13 @@ void setup() {
 	Serial.begin(115200);
 	Serial.println("Tetris");
 	FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
-
+	initKeys();
 	// the microseconds since startup are a perfect seed as
 	// the user has pressed a button since boot time
 	randomSeed(micros());   // init rng
-	wallGameState = STATE_TETRIS;
+	wallGameState = STATE_SNAKE;
 
+	pollKeyStatus();
 	initTetris();
 }
 
@@ -34,7 +37,7 @@ void loop() {
 		break;
 	}
 	case STATE_SNAKE: {
-		loopSnake();
+		snake.loopSnake();
 		break;
 	}
 	default:

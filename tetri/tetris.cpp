@@ -659,7 +659,6 @@ void loopTetris() {
 
 void initTetris() {
 	pinMode(SPEAKER_PIN, OUTPUT);
-	initKeys();
 
 // init game cycle counter
 	next_event = millis() + GAME_CYCLE;
