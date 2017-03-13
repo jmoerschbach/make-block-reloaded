@@ -9,17 +9,13 @@
 #include "../hmi/keys.h"
 SnakeGame::SnakeGame() {
 	resetGameArea();
-	headX = 1;
-	headY = 1;
-	tailX = 0;
-	tailY = 1;
 
-	gameArea[1][1] = SNAKE_HEAD;
-	gameArea[0][1] = SNAKE_TAIL;
+	gameArea[snake.head.x][snake.head.y] = SNAKE_HEAD;
+	gameArea[snake.tail[0].x][snake.tail[0].y] = SNAKE_TAIL;
 	currentDirection = RIGHT;
 	gameState = TITLE;
 
-	gameArea[(W / 2) + 3][(H / 2)] = FOOD;
+	placeFood();
 
 }
 
@@ -103,23 +99,9 @@ CRGB SnakeGame::determineColorOf(uint8_t x, uint8_t y) {
 	}
 }
 
-void SnakeGame::moveSnakeHead(int8_t x, int8_t y) {
-	gameArea[headX][headY] = SNAKE_TAIL;
-	headX += x;
-	headY += y;
-	gameArea[headX][headY] = SNAKE_HEAD;
-}
-
-void SnakeGame::cutSnakeTail(int8_t x, int8_t y) {
-	gameArea[tailX][tailY] = FREE;
-	tailX += x;
-	tailY += y;
-	gameArea[tailX][tailY] = SNAKE_TAIL;
-}
-
 void SnakeGame::moveSnake(int8_t x, int8_t y) {
-	uint8_t pixelAheadX = headX + x;
-	uint8_t pixelAheadY = headY + y;
+	uint8_t pixelAheadX = snake.head.x + x;
+	uint8_t pixelAheadY = snake.head.y + y;
 
 	if (!isPixelInBounds(pixelAheadX, pixelAheadY))
 		return;
@@ -127,10 +109,26 @@ void SnakeGame::moveSnake(int8_t x, int8_t y) {
 	if (isPixelSnake(pixelAheadX, pixelAheadY))
 		return;
 
-//	if (!isPixelFood(pixelAheadX, pixelAheadY))
-//		cutSnakeTail(x, y);
-
-	moveSnakeHead(x, y);
+	if (isPixelFood(pixelAheadX, pixelAheadY)) {
+		snake.appendTail();
+		placeFood();
+	}
+	eraseSnake();
+	snake.moveSnake(currentDirection);
+}
+void SnakeGame::eraseSnake() {
+	for (uint8_t x = 0; x < W; x++) {
+		for (uint8_t y = 0; y < H; y++) {
+			if (gameArea[x][y] == SNAKE_HEAD || gameArea[x][y] == SNAKE_TAIL)
+				gameArea[x][y] = FREE;
+		}
+	}
+}
+void SnakeGame::drawSnake() {
+	for (uint16_t i = 0; i < snake.length; i++) {
+		gameArea[snake.tail[i].x][snake.tail[i].y] = SNAKE_TAIL;
+	}
+	gameArea[snake.head.x][snake.head.y] = SNAKE_HEAD;
 }
 
 void SnakeGame::moveSnakeBla() {
@@ -176,9 +174,10 @@ void SnakeGame::loopSnake() {
 		break;
 	case PLAYING:
 		moveSnakeBla();
+		drawSnake();
 		break;
 	case SCORE:
-	break;
+		break;
 	}
 
 	draw();
