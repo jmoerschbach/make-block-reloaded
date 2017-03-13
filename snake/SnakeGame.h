@@ -17,29 +17,31 @@ public:
 	enum PixelState {
 		FREE, FOOD, SNAKE_TAIL, SNAKE_HEAD
 	};
+
+private:
 	enum Direction {
 		LEFT, RIGHT, UP, DOWN
 	};
-private:
+	enum SnakeState {
+		PLAYING, TITLE, SCORE
+	};
 	void placeFood();
 	void resetGameArea();
-	void draw();
-	bool isPixelFree(uint8_t x, uint8_t y);
-	bool isPixelFood(uint8_t x, uint8_t y);
-	bool isPixelSnake(uint8_t x, uint8_t y);
-	bool isPixelInBounds(uint8_t x, uint8_t y);
-	bool isAtLeastOnePixelFree();
+	void draw();bool isPixelFree(uint8_t x, uint8_t y);bool isPixelFood(
+			uint8_t x, uint8_t y);bool isPixelSnake(uint8_t x, uint8_t y);bool isPixelInBounds(
+			uint8_t x, uint8_t y);bool isAtLeastOnePixelFree();
 	CRGB determineColorOf(uint8_t x, uint8_t y);
 	void moveSnakeBla();
 	void moveSnake(int8_t x, int8_t y);
 	void moveSnakeHead(int8_t x, int8_t y);
 	void cutSnakeTail(int8_t x, int8_t y);
-
+	void determineNewDirection();
 	PixelState gameArea[W][H];
 	uint8_t headX, headY;
 	uint8_t tailX, tailY;
 	uint32_t nextEvent;
 	Direction currentDirection;
+	SnakeState gameState;
 };
 
 #endif /* SNAKE_SNAKEGAME_H_ */

@@ -11,6 +11,7 @@
 void initKeys();
 void lockKeys();
 bool wasDropPressed();
+bool wasUpPressed();
 bool wasDownPressed();
 bool wasLeftPressed();
 bool wasRightPressed();

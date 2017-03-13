@@ -6,17 +6,18 @@
  */
 
 #include "SnakeGame.h"
-
+#include "../hmi/keys.h"
 SnakeGame::SnakeGame() {
 	resetGameArea();
-	headX = W / 2;
-	headY = H / 2;
-	tailX = (W / 2) - 1;
-	tailY = (H / 2);
+	headX = 1;
+	headY = 1;
+	tailX = 0;
+	tailY = 1;
 
-	gameArea[(W / 2)][(H / 2)] = SNAKE_HEAD;
-	gameArea[(W / 2) - 1][(H / 2)] = SNAKE_TAIL;
+	gameArea[1][1] = SNAKE_HEAD;
+	gameArea[0][1] = SNAKE_TAIL;
 	currentDirection = RIGHT;
+	gameState = TITLE;
 
 	gameArea[(W / 2) + 3][(H / 2)] = FOOD;
 
@@ -126,15 +127,15 @@ void SnakeGame::moveSnake(int8_t x, int8_t y) {
 	if (isPixelSnake(pixelAheadX, pixelAheadY))
 		return;
 
-	if (!isPixelFood(pixelAheadX, pixelAheadY))
-		cutSnakeTail(x, y);
+//	if (!isPixelFood(pixelAheadX, pixelAheadY))
+//		cutSnakeTail(x, y);
 
 	moveSnakeHead(x, y);
 }
 
 void SnakeGame::moveSnakeBla() {
-	int8_t x;
-	int8_t y;
+	int8_t x = 0;
+	int8_t y = 0;
 	switch (currentDirection) {
 	case RIGHT:
 		x = 1;
@@ -152,12 +153,34 @@ void SnakeGame::moveSnakeBla() {
 
 	moveSnake(x, y);
 }
-
+void SnakeGame::determineNewDirection() {
+	if (wasDownPressed() && currentDirection != UP)
+		currentDirection = DOWN;
+	else if (wasLeftPressed() && currentDirection != RIGHT)
+		currentDirection = LEFT;
+	else if (wasRightPressed() && currentDirection != LEFT)
+		currentDirection = RIGHT;
+	else if (wasUpPressed() && currentDirection != DOWN)
+		currentDirection = UP;
+}
 void SnakeGame::loopSnake() {
+	determineNewDirection();
+
 	if ((long) (nextEvent - millis()) > 0) {
 		return;
 	}
-	moveSnakeBla();
+	switch (gameState) {
+	case TITLE:
+		if (wasAnyKeyPressed())
+			gameState = PLAYING;
+		break;
+	case PLAYING:
+		moveSnakeBla();
+		break;
+	case SCORE:
+	break;
+	}
+
 	draw();
 	LEDS.show();
 	nextEvent += (1000 / 2);

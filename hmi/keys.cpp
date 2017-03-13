@@ -51,13 +51,16 @@ bool wasRightPressed() {
 	//return (ret & KEY_RIGHT);
 }
 
-bool wasRotatePressed() {
+
+
+bool wasUpPressed() {
 	if (Wii.wiiUProControllerConnected)
 		return Wii.getButtonClick(UP);
 	return false;
-	//return (ret & KEY_ROTATE);
 }
-
+bool wasRotatePressed() {
+	return wasUpPressed();
+}
 bool wasPausePressed() {
 	if (Wii.wiiUProControllerConnected)
 		return Wii.getButtonClick(HOME);
