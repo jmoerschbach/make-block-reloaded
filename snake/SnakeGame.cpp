@@ -12,7 +12,7 @@ SnakeGame::SnakeGame() {
 
 	gameArea[snake.head.x][snake.head.y] = SNAKE_HEAD;
 	gameArea[snake.tail[0].x][snake.tail[0].y] = SNAKE_TAIL;
-	currentDirection = RIGHT;
+
 	gameState = TITLE;
 
 	placeFood();
@@ -99,30 +99,18 @@ CRGB SnakeGame::determineColorOf(uint8_t x, uint8_t y) {
 	}
 }
 
-void SnakeGame::moveSnake(int8_t x, int8_t y) {
-	uint8_t pixelAheadX = snake.head.x + x;
-	uint8_t pixelAheadY = snake.head.y + y;
-
-	if (!isPixelInBounds(pixelAheadX, pixelAheadY))
-		return;
-
-	if (isPixelSnake(pixelAheadX, pixelAheadY))
-		return;
-
-	if (isPixelFood(pixelAheadX, pixelAheadY)) {
-		snake.appendTail();
-		placeFood();
-	}
+void SnakeGame::moveSnake() {
 	eraseSnake();
-	snake.moveSnake(currentDirection);
+	snake.moveSnake();
 }
 void SnakeGame::eraseSnake() {
-	for (uint8_t x = 0; x < W; x++) {
-		for (uint8_t y = 0; y < H; y++) {
-			if (gameArea[x][y] == SNAKE_HEAD || gameArea[x][y] == SNAKE_TAIL)
-				gameArea[x][y] = FREE;
-		}
-	}
+//	for (uint8_t x = 0; x < W; x++) {
+//		for (uint8_t y = 0; y < H; y++) {
+//			if (gameArea[x][y] == SNAKE_HEAD || gameArea[x][y] == SNAKE_TAIL)
+//				gameArea[x][y] = FREE;
+//		}
+//}
+	gameArea[snake.tail[snake.length].x][snake.tail[snake.length].y] = FREE;
 }
 void SnakeGame::drawSnake() {
 	for (uint16_t i = 0; i < snake.length; i++) {
@@ -131,38 +119,26 @@ void SnakeGame::drawSnake() {
 	gameArea[snake.head.x][snake.head.y] = SNAKE_HEAD;
 }
 
-void SnakeGame::moveSnakeBla() {
-	int8_t x = 0;
-	int8_t y = 0;
-	switch (currentDirection) {
-	case RIGHT:
-		x = 1;
-		break;
-	case LEFT:
-		x = -1;
-		break;
-	case UP:
-		y = 1;
-		break;
-	case DOWN:
-		y = -1;
-		break;
-	}
 
-	moveSnake(x, y);
+void SnakeGame::moveSnakeBla() {
+
+	Coordinate pixelAhead = snake.getPixelAhead();
+
+	if (!isPixelInBounds(pixelAhead.x, pixelAhead.y))
+		return;
+
+	if (isPixelSnake(pixelAhead.x, pixelAhead.y))
+		return;
+
+	if (isPixelFood(pixelAhead.x, pixelAhead.y)) {
+		snake.appendTail();
+		placeFood();
+	}
+	moveSnake();
 }
-void SnakeGame::determineNewDirection() {
-	if (wasDownPressed() && currentDirection != UP)
-		currentDirection = DOWN;
-	else if (wasLeftPressed() && currentDirection != RIGHT)
-		currentDirection = LEFT;
-	else if (wasRightPressed() && currentDirection != LEFT)
-		currentDirection = RIGHT;
-	else if (wasUpPressed() && currentDirection != DOWN)
-		currentDirection = UP;
-}
+
 void SnakeGame::loopSnake() {
-	determineNewDirection();
+	snake.determineNewDirection();
 
 	if ((long) (nextEvent - millis()) > 0) {
 		return;

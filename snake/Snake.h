@@ -14,12 +14,18 @@ class Snake {
 public:
 	Snake();
 	virtual ~Snake();
-
-	void moveSnake(Direction dir);
+	Coordinate getPixelAhead();
+	void determineNewDirection();
+	void moveSnake();
 	void appendTail();
 	Coordinate tail[H*W];
 	Coordinate head;
 	uint16_t length;
+
+private:
+	void adaptNewHeadCoordinate(Direction dir);
+	void adaptTailCoordinates();
+	Direction currentDirection;
 };
 
 #endif /* SNAKE_SNAKE_H_ */

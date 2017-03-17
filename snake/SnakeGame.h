@@ -17,7 +17,6 @@ public:
 
 	void loopSnake();
 
-
 private:
 	Snake snake;
 
@@ -28,13 +27,14 @@ private:
 			uint8_t x, uint8_t y);bool isAtLeastOnePixelFree();
 	CRGB determineColorOf(uint8_t x, uint8_t y);
 	void moveSnakeBla();
-	void moveSnake(int8_t x, int8_t y);
+	Coordinate getPixelAhead();
+	void moveSnake();
 	void drawSnake();
 	void eraseSnake();
 	void determineNewDirection();
 	PixelState gameArea[W][H];
 	uint32_t nextEvent;
-	Direction currentDirection;
+
 	SnakeState gameState;
 };
 

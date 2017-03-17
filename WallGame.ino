@@ -6,7 +6,7 @@
 #include "tetri/tetris.h"
 #include "snake/SnakeGame.h"
 CRGB leds[NUM_LEDS];
-SnakeGame snake;
+SnakeGame snakeGame;
 
 // possible game states
 typedef enum {
@@ -36,7 +36,7 @@ void loop() {
 		break;
 	}
 	case STATE_SNAKE: {
-		snake.loopSnake();
+		snakeGame.loopSnake();
 		break;
 	}
 	default:
