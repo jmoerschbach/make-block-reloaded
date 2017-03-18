@@ -34,7 +34,7 @@ private:
 	void eraseSnake();
 	void determineNewDirection();
 	void drawSnake();
-
+	void showTitle();
 	PixelState gameArea[W][H];
 	uint32_t nextEvent;
 

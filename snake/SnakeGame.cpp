@@ -7,6 +7,7 @@
 
 #include "SnakeGame.h"
 #include "../hmi/keys.h"
+#include "../hmi/text.h"
 SnakeGame::SnakeGame() {
 	resetGameArea();
 	drawSnake();
@@ -88,7 +89,7 @@ CRGB SnakeGame::determineColorOf(uint8_t x, uint8_t y) {
 	case SNAKE_TAIL:
 		return CRGB::Blue;
 	default:
-		return 0x101010; //dark gray
+		return CRGB(0x101010); //dark gray
 	}
 }
 
@@ -130,6 +131,16 @@ void SnakeGame::moveSnakeBla() {
 	snake.moveSnake();
 }
 
+void SnakeGame::showTitle() {
+	uint8_t offset = 0;
+	offset = text_draw_char('S', 0, 15, 0, text_char_width('S'), CRGB::Red);
+	text_draw_char('N', offset, 15, 0, text_char_width('N'), CRGB::Blue);
+	text_draw_char('A', offset, 10, 0, text_char_width('A'), CRGB::Blue);
+	offset += text_draw_char('K', offset, 4, 0, text_char_width('K'),
+			CRGB::Blue);
+	text_draw_char('E', offset, 4, 0, text_char_width('E'), CRGB::Blue);
+}
+
 void SnakeGame::loopSnake() {
 
 	if ((long) (nextEvent - millis()) > 0) {
@@ -138,6 +149,7 @@ void SnakeGame::loopSnake() {
 	snake.determineNewDirection();
 	switch (gameState) {
 	case TITLE:
+		showTitle();
 		if (wasAnyKeyPressed())
 			gameState = PLAYING;
 		break;
@@ -146,13 +158,13 @@ void SnakeGame::loopSnake() {
 			moveSnakeBla();
 			redrawSnake();
 			gameStepCounter = SNAKE_SPEED;
+			draw();
 		}
 		break;
 	case SCORE:
 		break;
 	}
 
-	draw();
 	LEDS.show();
 	nextEvent += GAME_CYCLE;
 }
