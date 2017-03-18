@@ -146,7 +146,6 @@ void SnakeGame::loopSnake() {
 	if ((long) (nextEvent - millis()) > 0) {
 		return;
 	}
-	snake.determineNewDirection();
 	switch (gameState) {
 	case TITLE:
 		showTitle();
@@ -154,6 +153,7 @@ void SnakeGame::loopSnake() {
 			gameState = PLAYING;
 		break;
 	case PLAYING:
+	snake.determineNewDirection();
 		if (--gameStepCounter == 0) {
 			moveSnakeBla();
 			redrawSnake();
