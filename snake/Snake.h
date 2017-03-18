@@ -23,7 +23,7 @@ public:
 	uint16_t length;
 
 private:
-	void adaptNewHeadCoordinate(Direction dir);
+	void adaptHeadCoordinate();
 	void adaptTailCoordinates();
 	Direction currentDirection;
 };

@@ -18,25 +18,8 @@ Snake::~Snake() {
 	// TODO Auto-generated destructor stub
 }
 
-void Snake::adaptNewHeadCoordinate(Direction dir) {
-	int8_t x = 0;
-	int8_t y = 0;
-	switch (dir) {
-	case RIGHT:
-		x = 1;
-		break;
-	case LEFT:
-		x = -1;
-		break;
-	case UP:
-		y = 1;
-		break;
-	case DOWN:
-		y = -1;
-		break;
-	}
-	head.x += x;
-	head.y += y;
+void Snake::adaptHeadCoordinate() {
+	head = getPixelAhead();
 }
 
 void Snake::adaptTailCoordinates() {
@@ -50,7 +33,7 @@ void Snake::adaptTailCoordinates() {
 
 void Snake::moveSnake() {
 	adaptTailCoordinates();
-	adaptNewHeadCoordinate(currentDirection);
+	adaptHeadCoordinate();
 }
 
 void Snake::appendTail() {

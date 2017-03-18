@@ -10,6 +10,9 @@
 #include "../WallGame.h"
 #include "Snake.h"
 #include "Enums.h"
+
+#define SNAKE_SPEED 40 //the lower the value, the higher the speed
+#define GAME_CYCLE (1000/60) //60 FPS
 class SnakeGame {
 public:
 	SnakeGame();
@@ -27,15 +30,16 @@ private:
 			uint8_t x, uint8_t y);bool isAtLeastOnePixelFree();
 	CRGB determineColorOf(uint8_t x, uint8_t y);
 	void moveSnakeBla();
-	Coordinate getPixelAhead();
-	void moveSnake();
-	void drawSnake();
+	void redrawSnake();
 	void eraseSnake();
 	void determineNewDirection();
+	void drawSnake();
+
 	PixelState gameArea[W][H];
 	uint32_t nextEvent;
 
 	SnakeState gameState;
+	uint8_t gameStepCounter;
 };
 
 #endif /* SNAKE_SNAKEGAME_H_ */

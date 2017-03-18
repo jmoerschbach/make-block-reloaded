@@ -13,8 +13,8 @@ enum Direction {
 };
 
 typedef struct {
-	int x;
-	int y;
+	uint8_t x;
+	uint8_t y;
 } Coordinate;
 enum PixelState {
 	FREE, FOOD, SNAKE_TAIL, SNAKE_HEAD

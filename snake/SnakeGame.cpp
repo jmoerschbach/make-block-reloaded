@@ -9,14 +9,10 @@
 #include "../hmi/keys.h"
 SnakeGame::SnakeGame() {
 	resetGameArea();
-
-	gameArea[snake.head.x][snake.head.y] = SNAKE_HEAD;
-	gameArea[snake.tail[0].x][snake.tail[0].y] = SNAKE_TAIL;
-
-	gameState = TITLE;
-
+	drawSnake();
 	placeFood();
-
+	gameStepCounter = SNAKE_SPEED;
+	gameState = TITLE;
 }
 
 SnakeGame::~SnakeGame() {
@@ -24,7 +20,6 @@ SnakeGame::~SnakeGame() {
 }
 
 void SnakeGame::resetGameArea() {
-
 	for (uint8_t x = 0; x < W; x++) {
 		for (uint8_t y = 0; y < H; y++) {
 			gameArea[x][y] = FREE;
@@ -33,9 +28,9 @@ void SnakeGame::resetGameArea() {
 }
 
 bool SnakeGame::isPixelFree(uint8_t x, uint8_t y) {
-	if (x > W || y > H)
-		return false;
-	return gameArea[x][y] == FREE;
+	if (isPixelInBounds(x, y))
+		return gameArea[x][y] == FREE;
+	return false;
 }
 
 bool SnakeGame::isPixelFood(uint8_t x, uint8_t y) {
@@ -51,9 +46,7 @@ bool SnakeGame::isPixelSnake(uint8_t x, uint8_t y) {
 }
 
 bool SnakeGame::isPixelInBounds(uint8_t x, uint8_t y) {
-	if (x < W && y < H)
-		return true;
-	return false;
+	return (x < W) && (y < H);
 }
 
 bool SnakeGame::isAtLeastOnePixelFree() {
@@ -95,23 +88,19 @@ CRGB SnakeGame::determineColorOf(uint8_t x, uint8_t y) {
 	case SNAKE_TAIL:
 		return CRGB::Blue;
 	default:
-		return CRGB::Black;
+		return 0x101010; //dark gray
 	}
 }
 
-void SnakeGame::moveSnake() {
-	eraseSnake();
-	snake.moveSnake();
-}
 void SnakeGame::eraseSnake() {
-//	for (uint8_t x = 0; x < W; x++) {
-//		for (uint8_t y = 0; y < H; y++) {
-//			if (gameArea[x][y] == SNAKE_HEAD || gameArea[x][y] == SNAKE_TAIL)
-//				gameArea[x][y] = FREE;
-//		}
-//}
-	gameArea[snake.tail[snake.length].x][snake.tail[snake.length].y] = FREE;
+	for (uint8_t x = 0; x < W; x++) {
+		for (uint8_t y = 0; y < H; y++) {
+			if (gameArea[x][y] == SNAKE_HEAD || gameArea[x][y] == SNAKE_TAIL)
+				gameArea[x][y] = FREE;
+		}
+	}
 }
+
 void SnakeGame::drawSnake() {
 	for (uint16_t i = 0; i < snake.length; i++) {
 		gameArea[snake.tail[i].x][snake.tail[i].y] = SNAKE_TAIL;
@@ -119,6 +108,10 @@ void SnakeGame::drawSnake() {
 	gameArea[snake.head.x][snake.head.y] = SNAKE_HEAD;
 }
 
+void SnakeGame::redrawSnake() {
+	eraseSnake();
+	drawSnake();
+}
 
 void SnakeGame::moveSnakeBla() {
 
@@ -134,23 +127,26 @@ void SnakeGame::moveSnakeBla() {
 		snake.appendTail();
 		placeFood();
 	}
-	moveSnake();
+	snake.moveSnake();
 }
 
 void SnakeGame::loopSnake() {
-	snake.determineNewDirection();
 
 	if ((long) (nextEvent - millis()) > 0) {
 		return;
 	}
+	snake.determineNewDirection();
 	switch (gameState) {
 	case TITLE:
 		if (wasAnyKeyPressed())
 			gameState = PLAYING;
 		break;
 	case PLAYING:
-		moveSnakeBla();
-		drawSnake();
+		if (--gameStepCounter == 0) {
+			moveSnakeBla();
+			redrawSnake();
+			gameStepCounter = SNAKE_SPEED;
+		}
 		break;
 	case SCORE:
 		break;
@@ -158,5 +154,5 @@ void SnakeGame::loopSnake() {
 
 	draw();
 	LEDS.show();
-	nextEvent += (1000 / 2);
+	nextEvent += GAME_CYCLE;
 }
