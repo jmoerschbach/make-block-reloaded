@@ -12,8 +12,10 @@ SnakeGame::SnakeGame() {
 	resetGameArea();
 	drawSnake();
 	placeFood();
-	gameStepCounter = SNAKE_SPEED;
 	gameState = TITLE;
+	currentLevel = 0;
+	lengthGainedInCurrentLevel = 0;
+	gameStepCounter = snake.getSpeedInFPS(currentLevel);
 }
 
 SnakeGame::~SnakeGame() {
@@ -130,6 +132,7 @@ void SnakeGame::moveSnakeBla() {
 
 	if (isPixelFood(pixelAhead.x, pixelAhead.y)) {
 		snake.appendTail();
+		lengthGainedInCurrentLevel++;
 		placeFood();
 	}
 	snake.moveSnake();
@@ -143,6 +146,14 @@ void SnakeGame::showTitle() {
 	offset += text_draw_char('K', offset, 4, 0, text_char_width('K'),
 			CRGB::Blue);
 	text_draw_char('E', offset, 4, 0, text_char_width('E'), CRGB::Blue);
+}
+
+uint8_t SnakeGame::calculateLevel() {
+	if (lengthGainedInCurrentLevel == FOOD_PER_LEVEL) {
+		currentLevel++;
+		lengthGainedInCurrentLevel = 0;
+	}
+	return currentLevel;
 }
 
 void SnakeGame::loopSnake() {
@@ -161,7 +172,7 @@ void SnakeGame::loopSnake() {
 		if (--gameStepCounter == 0) {
 			moveSnakeBla();
 			redrawSnake();
-			gameStepCounter = SNAKE_SPEED;
+			gameStepCounter = snake.getSpeedInFPS(calculateLevel());
 			drawGameArea();
 		}
 		break;

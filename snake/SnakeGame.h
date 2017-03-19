@@ -10,8 +10,7 @@
 #include "../WallGame.h"
 #include "Snake.h"
 #include "Enums.h"
-
-#define SNAKE_SPEED 40 //the lower the value, the higher the speed
+#define FOOD_PER_LEVEL 5
 class SnakeGame {
 public:
 	SnakeGame();
@@ -34,6 +33,9 @@ private:
 	void determineNewDirection();
 	void drawSnake();
 	void showTitle();
+	uint8_t calculateLevel();
+	uint8_t currentLevel;
+	uint8_t lengthGainedInCurrentLevel;
 	PixelState gameArea[W][H];
 	uint32_t nextEvent;
 
