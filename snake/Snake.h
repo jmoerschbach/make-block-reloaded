@@ -18,14 +18,16 @@ public:
 	void determineNewDirection();
 	void moveSnake();
 	void appendTail();
-	Coordinate tail[H*W];
+	Coordinate tail[H * W];
 	Coordinate head;
 	uint16_t length;
 
 private:
 	void adaptHeadCoordinate();
 	void adaptTailCoordinates();
+	void takeOver();
 	Direction currentDirection;
+	Direction newDirection;
 };
 
 #endif /* SNAKE_SNAKE_H_ */

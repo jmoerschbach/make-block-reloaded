@@ -12,6 +12,7 @@ Snake::Snake() {
 	head = {1, 1};
 	tail[0] = {0, 1};
 	currentDirection = RIGHT;
+	newDirection = RIGHT;
 }
 
 Snake::~Snake() {
@@ -32,6 +33,7 @@ void Snake::adaptTailCoordinates() {
 }
 
 void Snake::moveSnake() {
+	//takeOver();
 	adaptTailCoordinates();
 	adaptHeadCoordinate();
 }
@@ -69,4 +71,31 @@ void Snake::determineNewDirection() {
 		currentDirection = RIGHT;
 	else if (wasUpPressed() && currentDirection != DOWN)
 		currentDirection = UP;
+
+}
+
+void Snake::takeOver() {
+	switch (currentDirection) {
+	case UP:
+		if (newDirection != DOWN)
+			currentDirection = newDirection;
+		break;
+	case DOWN:
+		if (newDirection != UP)
+			currentDirection = newDirection;
+		break;
+	case LEFT:
+		if (newDirection != RIGHT)
+			currentDirection = newDirection;
+		break;
+	case RIGHT:
+		if (newDirection != LEFT)
+			currentDirection = newDirection;
+		break;
+	default:
+		break;
+	}
+
+	Serial.print("new direction: ");
+	Serial.println(currentDirection);
 }

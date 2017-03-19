@@ -7,9 +7,7 @@
 
 #include "../WallGame.h"
 #include "../hmi/keys.h"
-#define FPS      60    // 60Hz
 
-#define GAME_CYCLE (1000/FPS)
 
 #define TITLE_SCROLL_SPEED      2
 #define GAME_SCORE_SCROLL_SPEED 5   // frames@60Hz

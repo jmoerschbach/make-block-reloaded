@@ -72,7 +72,7 @@ void SnakeGame::placeFood() {
 	}
 }
 
-void SnakeGame::draw() {
+void SnakeGame::drawGameArea() {
 	for (uint8_t x = 0; x < W; x++) {
 		for (uint8_t y = 0; y < H; y++) {
 			LED(x,y)= determineColorOf(x,y);
@@ -118,11 +118,15 @@ void SnakeGame::moveSnakeBla() {
 
 	Coordinate pixelAhead = snake.getPixelAhead();
 
-	if (!isPixelInBounds(pixelAhead.x, pixelAhead.y))
+	if (!isPixelInBounds(pixelAhead.x, pixelAhead.y)) {
+		Serial.println("not in bounds");
 		return;
+	}
 
-	if (isPixelSnake(pixelAhead.x, pixelAhead.y))
+	if (isPixelSnake(pixelAhead.x, pixelAhead.y)) {
+		Serial.println("snake ahead");
 		return;
+	}
 
 	if (isPixelFood(pixelAhead.x, pixelAhead.y)) {
 		snake.appendTail();
@@ -153,12 +157,12 @@ void SnakeGame::loopSnake() {
 			gameState = PLAYING;
 		break;
 	case PLAYING:
-	snake.determineNewDirection();
+		snake.determineNewDirection();
 		if (--gameStepCounter == 0) {
 			moveSnakeBla();
 			redrawSnake();
 			gameStepCounter = SNAKE_SPEED;
-			draw();
+			drawGameArea();
 		}
 		break;
 	case SCORE:

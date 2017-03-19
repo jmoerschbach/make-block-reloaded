@@ -12,7 +12,6 @@
 #include "Enums.h"
 
 #define SNAKE_SPEED 40 //the lower the value, the higher the speed
-#define GAME_CYCLE (1000/60) //60 FPS
 class SnakeGame {
 public:
 	SnakeGame();
@@ -25,7 +24,7 @@ private:
 
 	void placeFood();
 	void resetGameArea();
-	void draw();bool isPixelFree(uint8_t x, uint8_t y);bool isPixelFood(
+	void drawGameArea();bool isPixelFree(uint8_t x, uint8_t y);bool isPixelFood(
 			uint8_t x, uint8_t y);bool isPixelSnake(uint8_t x, uint8_t y);bool isPixelInBounds(
 			uint8_t x, uint8_t y);bool isAtLeastOnePixelFree();
 	CRGB determineColorOf(uint8_t x, uint8_t y);

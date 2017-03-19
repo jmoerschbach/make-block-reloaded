@@ -11,6 +11,10 @@
 // total display size
 #define H 20
 #define W 16
+#define FPS 60   // 60Hz
+
+#define GAME_CYCLE (1000/FPS)
+
 #define NUM_LEDS ((H*W))
 extern CRGB leds[NUM_LEDS];
 
