@@ -8,7 +8,7 @@
 #ifndef TET_TEXT_H_
 #define TET_TEXT_H_
 #include <FastLED.h>
-uint8_t text_draw_char(char chr, int8_t x, int8_t y, int8_t skip, uint8_t len,
+uint8_t drawChar(char chr, int8_t x, int8_t y, int8_t skip, uint8_t len,
 		CRGB c);
 void text_str(const char *str, int8_t x, int8_t y, int8_t skip, int8_t len,
 		CRGB c);

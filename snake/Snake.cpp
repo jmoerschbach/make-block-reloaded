@@ -8,17 +8,19 @@
 #include "Snake.h"
 #include "../hmi/keys.h"
 Snake::Snake() {
+	reset();
+}
+
+Snake::~Snake() {
+	// TODO Auto-generated destructor stub
+}
+void Snake::reset() {
 	length = 1;
 	head = {1, 1};
 	tail[0] = {0, 1};
 	currentDirection = RIGHT;
 	newDirection = RIGHT;
 }
-
-Snake::~Snake() {
-	// TODO Auto-generated destructor stub
-}
-
 void Snake::adaptHeadCoordinate() {
 	head = getPixelAhead();
 }

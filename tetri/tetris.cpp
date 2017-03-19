@@ -152,13 +152,13 @@ uint8_t getLevelRate() {
 void drawLevel() {
 	drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
 	if (currentLevel < 10)
-		text_draw_char('0' + currentLevel, LEVEL_X, LEVEL_Y, 0, 3,
+		drawChar('0' + currentLevel, LEVEL_X, LEVEL_Y, 0, 3,
 				CRGB(0x00ff00));
 	else if (currentLevel < 20)
-		text_draw_char('0' + currentLevel - 10, LEVEL_X, LEVEL_Y, 0, 3,
+		drawChar('0' + currentLevel - 10, LEVEL_X, LEVEL_Y, 0, 3,
 				CRGB(0xffff00));
 	else
-		text_draw_char('X', LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xff0000));
+		drawChar('X', LEVEL_X, LEVEL_Y, 0, 3, CRGB(0xff0000));
 }
 
 void setTetrominoBlock(uint8_t x, uint8_t y, uint8_t colorIndex) {

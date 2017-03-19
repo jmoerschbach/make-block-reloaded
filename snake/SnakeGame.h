@@ -27,13 +27,16 @@ private:
 			uint8_t x, uint8_t y);bool isPixelSnake(uint8_t x, uint8_t y);bool isPixelInBounds(
 			uint8_t x, uint8_t y);bool isAtLeastOnePixelFree();
 	CRGB determineColorOf(uint8_t x, uint8_t y);
-	void moveSnakeBla();
+	void eatAndMoveSnake();
 	void redrawSnake();
 	void eraseSnake();
 	void determineNewDirection();
 	void drawSnake();
-	void showTitle();
+	SnakeState showTitle();bool isPixelAheadGood();
 	uint8_t calculateLevel();
+	SnakeState runGameEngine();
+	void reset();
+
 	uint8_t currentLevel;
 	uint8_t lengthGainedInCurrentLevel;
 	PixelState gameArea[W][H];

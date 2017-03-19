@@ -8,20 +8,24 @@
 #include "SnakeGame.h"
 #include "../hmi/keys.h"
 #include "../hmi/text.h"
+
 SnakeGame::SnakeGame() {
-	resetGameArea();
-	drawSnake();
-	placeFood();
-	gameState = TITLE;
-	currentLevel = 0;
-	lengthGainedInCurrentLevel = 0;
-	gameStepCounter = snake.getSpeedInFPS(currentLevel);
+	reset();
 }
 
 SnakeGame::~SnakeGame() {
 	// TODO Auto-generated destructor stub
 }
 
+void SnakeGame::reset() {
+	resetGameArea();
+	placeFood();
+	snake.reset();
+	gameState = TITLE;
+	currentLevel = 0;
+	lengthGainedInCurrentLevel = 0;
+	gameStepCounter = snake.getSpeedInFPS(currentLevel);
+}
 void SnakeGame::resetGameArea() {
 	for (uint8_t x = 0; x < W; x++) {
 		for (uint8_t y = 0; y < H; y++) {
@@ -116,19 +120,24 @@ void SnakeGame::redrawSnake() {
 	drawSnake();
 }
 
-void SnakeGame::moveSnakeBla() {
-
+bool SnakeGame::isPixelAheadGood() {
 	Coordinate pixelAhead = snake.getPixelAhead();
-
 	if (!isPixelInBounds(pixelAhead.x, pixelAhead.y)) {
 		Serial.println("not in bounds");
-		return;
+		return false;
 	}
 
 	if (isPixelSnake(pixelAhead.x, pixelAhead.y)) {
 		Serial.println("snake ahead");
-		return;
+		return false;
 	}
+
+	return true;
+}
+
+void SnakeGame::eatAndMoveSnake() {
+
+	Coordinate pixelAhead = snake.getPixelAhead();
 
 	if (isPixelFood(pixelAhead.x, pixelAhead.y)) {
 		snake.appendTail();
@@ -138,14 +147,18 @@ void SnakeGame::moveSnakeBla() {
 	snake.moveSnake();
 }
 
-void SnakeGame::showTitle() {
+SnakeState SnakeGame::showTitle() {
+	LEDS.clear();
 	uint8_t offset = 0;
-	offset = text_draw_char('S', 0, 15, 0, text_char_width('S'), CRGB::Red);
-	text_draw_char('N', offset, 15, 0, text_char_width('N'), CRGB::Blue);
-	text_draw_char('A', offset, 10, 0, text_char_width('A'), CRGB::Blue);
-	offset += text_draw_char('K', offset, 4, 0, text_char_width('K'),
+	offset = drawChar('S', 0, 15, 0, text_char_width('S'), CRGB::Red);
+	drawChar('N', offset, 15, 0, text_char_width('N'), CRGB::Blue);
+	drawChar('A', offset, 10, 0, text_char_width('A'), CRGB::Blue);
+	offset += drawChar('K', offset, 4, 0, text_char_width('K'),
 			CRGB::Blue);
-	text_draw_char('E', offset, 4, 0, text_char_width('E'), CRGB::Blue);
+	drawChar('E', offset, 4, 0, text_char_width('E'), CRGB::Blue);
+	if (wasAnyKeyPressed())
+		return PLAYING;
+	return TITLE;
 }
 
 uint8_t SnakeGame::calculateLevel() {
@@ -156,6 +169,17 @@ uint8_t SnakeGame::calculateLevel() {
 	return currentLevel;
 }
 
+SnakeState SnakeGame::runGameEngine() {
+	if (!isPixelAheadGood()) {
+		reset();
+		return TITLE;
+	}
+	eatAndMoveSnake();
+	redrawSnake();
+	drawGameArea();
+	return PLAYING;
+}
+
 void SnakeGame::loopSnake() {
 
 	if ((long) (nextEvent - millis()) > 0) {
@@ -163,17 +187,13 @@ void SnakeGame::loopSnake() {
 	}
 	switch (gameState) {
 	case TITLE:
-		showTitle();
-		if (wasAnyKeyPressed())
-			gameState = PLAYING;
+		gameState = showTitle();
 		break;
 	case PLAYING:
 		snake.determineNewDirection();
 		if (--gameStepCounter == 0) {
-			moveSnakeBla();
-			redrawSnake();
+			gameState = runGameEngine();
 			gameStepCounter = snake.getSpeedInFPS(calculateLevel());
-			drawGameArea();
 		}
 		break;
 	case SCORE:

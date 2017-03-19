@@ -53,7 +53,7 @@ void text_draw_pixel(uint8_t x, uint8_t y, CRGB c) {
 }
 
 // display a single character at pos x,y
-uint8_t text_draw_char(char chr, int8_t x, int8_t y, int8_t skip, uint8_t len, CRGB c) {
+uint8_t drawChar(char chr, int8_t x, int8_t y, int8_t skip, uint8_t len, CRGB c) {
   const uint8_t *p;
   uint8_t l=0;
 
@@ -105,7 +105,7 @@ uint8_t text_char_width(char chr) {
 void text_str(const char *str, int8_t x, int8_t y, 
 	      int8_t skip, int8_t len, CRGB c) {
   while(*str && x<W) {
-    uint8_t w = text_draw_char(*str++, x, y, skip, len, c);
+    uint8_t w = drawChar(*str++, x, y, skip, len, c);
     x += w;
     len -= w;
     skip -= w;

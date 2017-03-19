@@ -19,6 +19,7 @@ public:
 	void moveSnake();
 	void appendTail();
 	uint8_t getSpeedInFPS(uint8_t level);
+	void reset();
 	Coordinate tail[H * W];
 	Coordinate head;
 	uint16_t length;
