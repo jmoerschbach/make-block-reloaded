@@ -34,14 +34,7 @@ void Snake::adaptTailCoordinates() {
 	tail[0].y = head.y;
 }
 
-uint8_t Snake::getSpeedInFPS(uint8_t level) {
 
-	static const uint8_t speedTable[] PROGMEM =
-	// 0  1  2  3  4  5  6  7  8  9 10
-			{ 40, 35, 30, 25, 20, 17, 15, 13, 11, 9, 8 };
-
-	return pgm_read_byte(speedTable + ((level < 10) ? level : 10));
-}
 
 void Snake::moveSnake() {
 	//takeOver();

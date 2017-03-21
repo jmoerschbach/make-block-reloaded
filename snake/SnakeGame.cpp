@@ -21,10 +21,11 @@ void SnakeGame::reset() {
 	resetGameArea();
 	placeFood();
 	snake.reset();
+	nextEvent = millis() + GAME_CYCLE;
 	gameState = TITLE;
 	currentLevel = 0;
 	lengthGainedInCurrentLevel = 0;
-	gameStepCounter = snake.getSpeedInFPS(currentLevel);
+	gameStepCounter = getSpeedInFPS();
 }
 void SnakeGame::resetGameArea() {
 	for (uint8_t x = 0; x < W; x++) {
@@ -153,8 +154,7 @@ SnakeState SnakeGame::showTitle() {
 	offset = drawChar('S', 0, 15, 0, text_char_width('S'), CRGB::Red);
 	drawChar('N', offset, 15, 0, text_char_width('N'), CRGB::Blue);
 	drawChar('A', offset, 10, 0, text_char_width('A'), CRGB::Blue);
-	offset += drawChar('K', offset, 4, 0, text_char_width('K'),
-			CRGB::Blue);
+	offset += drawChar('K', offset, 4, 0, text_char_width('K'), CRGB::Blue);
 	drawChar('E', offset, 4, 0, text_char_width('E'), CRGB::Blue);
 	if (wasAnyKeyPressed())
 		return PLAYING;
@@ -169,6 +169,15 @@ uint8_t SnakeGame::calculateLevel() {
 	return currentLevel;
 }
 
+uint8_t SnakeGame::getSpeedInFPS() {
+
+	static const uint8_t speedTable[] PROGMEM =
+	// 0  1  2  3  4  5  6  7  8  9 10
+			{ 40, 35, 30, 25, 20, 17, 15, 13, 11, 9, 8 };
+
+	return pgm_read_byte(speedTable + ((currentLevel < 10) ? currentLevel : 10));
+}
+
 SnakeState SnakeGame::runGameEngine() {
 	if (!isPixelAheadGood()) {
 		reset();
@@ -177,6 +186,7 @@ SnakeState SnakeGame::runGameEngine() {
 	eatAndMoveSnake();
 	redrawSnake();
 	drawGameArea();
+	calculateLevel();
 	return PLAYING;
 }
 
@@ -193,7 +203,7 @@ void SnakeGame::loopSnake() {
 		snake.determineNewDirection();
 		if (--gameStepCounter == 0) {
 			gameState = runGameEngine();
-			gameStepCounter = snake.getSpeedInFPS(calculateLevel());
+			gameStepCounter = getSpeedInFPS();
 		}
 		break;
 	case SCORE:
@@ -201,5 +211,5 @@ void SnakeGame::loopSnake() {
 	}
 
 	LEDS.show();
-	nextEvent += GAME_CYCLE;
+	nextEvent = millis() + GAME_CYCLE;
 }

@@ -16,7 +16,7 @@ bool wasDownPressed();
 bool wasLeftPressed();
 bool wasRightPressed();
 bool wasRotatePressed();
-bool wasPausePressed();
+bool wasHomePressed();
 bool wasAnyKeyPressed();
 void pollKeyStatus();
 

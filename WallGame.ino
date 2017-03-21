@@ -5,15 +5,13 @@
 #include "hmi/keys.h"
 #include "tetri/tetris.h"
 #include "snake/SnakeGame.h"
+#include "menu/Menu.h"
 CRGB leds[NUM_LEDS];
 SnakeGame snakeGame;
+Menu menu;
 
-// possible game states
-typedef enum {
-	STATE_TETRIS, STATE_SNAKE, STATE_LIGHT_BULB
-} state_t;
+WallGameState wallGameState;
 
-state_t wallGameState;
 void setup() {
 	Serial.begin(115200);
 	Serial.println("Tetris");
@@ -30,6 +28,9 @@ void setup() {
 
 void loop() {
 	pollKeyStatus();
+	if (wasHomePressed())
+		wallGameState = STATE_MENU;
+
 	switch (wallGameState) {
 	case STATE_TETRIS: {
 		loopTetris();
@@ -37,6 +38,10 @@ void loop() {
 	}
 	case STATE_SNAKE: {
 		snakeGame.loopSnake();
+		break;
+	}
+	case STATE_MENU: {
+		wallGameState = menu.loopMenu();
 		break;
 	}
 	default:

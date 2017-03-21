@@ -59,15 +59,16 @@ bool wasUpPressed() {
 bool wasRotatePressed() {
 	return wasUpPressed();
 }
-bool wasPausePressed() {
-	if (Wii.wiiUProControllerConnected)
-		return Wii.getButtonClick(HOME);
-	return false;
-}
 
 bool wasAnyKeyPressed() {
 	return wasLeftPressed() || wasRightPressed() || wasDropPressed()
 			|| wasUpPressed() || wasDownPressed();
+}
+
+bool wasHomePressed() {
+	if (Wii.wiiUProControllerConnected)
+		return Wii.getButtonClick(HOME);
+	return false;
 }
 
 void pollKeyStatus() {

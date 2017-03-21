@@ -40,12 +40,7 @@
 
 // possible game states
 typedef enum {
-	STATE_CONFIG,
-	STATE_TITLE,
-	STATE_GAME,
-	STATE_SCORE,
-	STATE_INITIALS,
-	STATE_PAUSED
+	STATE_CONFIG, STATE_TITLE, STATE_GAME, STATE_SCORE, STATE_INITIALS,
 } tetris_state_t;
 
 tetris_state_t gameState;
@@ -152,8 +147,7 @@ uint8_t getLevelRate() {
 void drawLevel() {
 	drawFilledRectangle(LEVEL_X, LEVEL_Y, 3, 5, CRGB::Black);
 	if (currentLevel < 10)
-		drawChar('0' + currentLevel, LEVEL_X, LEVEL_Y, 0, 3,
-				CRGB(0x00ff00));
+		drawChar('0' + currentLevel, LEVEL_X, LEVEL_Y, 0, 3, CRGB(0x00ff00));
 	else if (currentLevel < 20)
 		drawChar('0' + currentLevel - 10, LEVEL_X, LEVEL_Y, 0, 3,
 				CRGB(0xffff00));
@@ -341,8 +335,6 @@ void initGame() {
 	LEDS.clear();
 	LEDS.setBrightness(config_get_brightness());
 
-
-
 	initializeGameArea();
 
 	tableOfFullRows = 0;  // no row being removed
@@ -477,8 +469,6 @@ uint8_t removeRows() {
 	return numberOfRowsRemoved;
 }
 
-
-
 void advanceTetrominoByGravity() {
 	// advance tetromino by gravity
 	if ((!isGameFinished()) && (--gravityStepCounter == 0)) {
@@ -580,7 +570,6 @@ uint8_t runTetris() {
 }
 
 void pauseGame() {
-	gameState = STATE_PAUSED;
 }
 
 void loopTetris() {
@@ -617,8 +606,7 @@ void loopTetris() {
 			}
 			//song_process(0);
 		}
-		if (wasPausePressed())
-			gameState = STATE_PAUSED;
+
 		break;
 
 	case STATE_SCORE:
@@ -644,17 +632,13 @@ void loopTetris() {
 			gameState = STATE_TITLE;
 		}
 		break;
-	case STATE_PAUSED:
-		if (wasPausePressed())
-			gameState = STATE_GAME;
-		break;
 	default:
 		break;
 	}
 
 	LEDS.show();
 
-	next_event += GAME_CYCLE;
+	next_event = millis() + GAME_CYCLE;
 }
 
 void initTetris() {

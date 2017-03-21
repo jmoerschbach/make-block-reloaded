@@ -25,7 +25,10 @@ extern CRGB leds[NUM_LEDS];
 #else
 #define LED(x,y)  leds[H-(y)-1+H*(x)]
 #endif
-
+// possible game states
+enum WallGameState {
+	STATE_TETRIS, STATE_SNAKE, STATE_LIGHT_BULB, STATE_MENU
+};
 
 #define LED_DATA_PIN    12
 #endif /* WALLGAME_H_ */
