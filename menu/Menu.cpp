@@ -16,12 +16,9 @@ Menu::~Menu() {
 }
 
 WallGameState Menu::loopMenu() {
-	if ((long) (nextEvent - millis()) > 0) {
-		return STATE_MENU;
-	}
+
 	LEDS.clear();
-	LEDS.show();
-	nextEvent = millis() + GAME_CYCLE;
+
 	if (wasUpPressed())
 		return STATE_TETRIS;
 	else if (wasDownPressed())

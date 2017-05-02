@@ -192,9 +192,9 @@ SnakeState SnakeGame::runGameEngine() {
 
 void SnakeGame::loopSnake() {
 
-	if ((long) (nextEvent - millis()) > 0) {
-		return;
-	}
+//	if ((long) (nextEvent - millis()) > 0) {
+//		return;
+//	}
 	switch (gameState) {
 	case TITLE:
 		gameState = showTitle();
@@ -210,6 +210,6 @@ void SnakeGame::loopSnake() {
 		break;
 	}
 
-	LEDS.show();
-	nextEvent = millis() + GAME_CYCLE;
+//	LEDS.show();
+//	nextEvent = millis() + GAME_CYCLE;
 }

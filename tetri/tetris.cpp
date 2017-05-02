@@ -575,9 +575,9 @@ void pauseGame() {
 void loopTetris() {
 	// frame time hasn't elapsed yet?
 	// the following will also work when millis() wraps (after 49 days :-)
-	if ((long) (next_event - millis()) > 0) {
-		return;
-	}
+//	if ((long) (next_event - millis()) > 0) {
+//		return;
+//	}
 
 	switch (gameState) {
 	case STATE_CONFIG:
@@ -636,9 +636,9 @@ void loopTetris() {
 		break;
 	}
 
-	LEDS.show();
+	//LEDS.show();
 
-	next_event = millis() + GAME_CYCLE;
+	//next_event = millis() + GAME_CYCLE;
 }
 
 void initTetris() {

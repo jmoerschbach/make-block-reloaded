@@ -8,6 +8,7 @@
 #include "menu/Menu.h"
 CRGB leds[NUM_LEDS];
 SnakeGame snakeGame;
+uint32_t nextEvent;
 Menu menu;
 
 WallGameState wallGameState;
@@ -28,6 +29,9 @@ void setup() {
 
 void loop() {
 	pollKeyStatus();
+	if ((long) (nextEvent - millis()) > 0) {
+		return;
+	}
 	if (wasHomePressed())
 		wallGameState = STATE_MENU;
 
@@ -47,5 +51,6 @@ void loop() {
 	default:
 		break;
 	}
-
+	LEDS.show();
+	nextEvent = millis() + GAME_CYCLE;
 }
