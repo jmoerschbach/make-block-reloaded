@@ -21,17 +21,26 @@ void setup() {
 	// the microseconds since startup are a perfect seed as
 	// the user has pressed a button since boot time
 	randomSeed(micros());   // init rng
-	wallGameState = STATE_SNAKE;
+	wallGameState = STATE_MENU;
 
-	pollKeyStatus();
 	initTetris();
 }
 
 void loop() {
 	pollKeyStatus();
-	if ((long) (nextEvent - millis()) > 0) {
-		return;
+	if (isTimeForNextEvent()) {
+		loopGameState();
+
+		nextEvent = millis() + GAME_CYCLE;
+		LEDS.show();
 	}
+}
+
+bool isTimeForNextEvent() {
+	return !((long) (nextEvent - millis()) > 0);
+}
+
+void loopGameState() {
 	if (wasHomePressed())
 		wallGameState = STATE_MENU;
 
@@ -51,6 +60,5 @@ void loop() {
 	default:
 		break;
 	}
-	LEDS.show();
-	nextEvent = millis() + GAME_CYCLE;
 }
+

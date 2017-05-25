@@ -30,5 +30,5 @@ enum WallGameState {
 	STATE_TETRIS, STATE_SNAKE, STATE_LIGHT_BULB, STATE_MENU
 };
 
-#define LED_DATA_PIN    12
+#define LED_DATA_PIN    21
 #endif /* WALLGAME_H_ */
