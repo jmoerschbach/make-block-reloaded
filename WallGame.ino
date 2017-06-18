@@ -50,14 +50,11 @@ void loopGameState() {
 		break;
 	}
 	case STATE_SNAKE: {
-		snakeGame.loopSnake();
-		break;
-	}
-	case STATE_MENU: {
-		wallGameState = menu.loopMenu();
+		snakeGame.loop();
 		break;
 	}
 	default:
+		wallGameState = menu.loop();
 		break;
 	}
 }

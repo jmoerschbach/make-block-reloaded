@@ -18,6 +18,7 @@ bool wasRightPressed();
 bool wasRotatePressed();
 bool wasHomePressed();
 bool wasAnyKeyPressed();
+bool wasKeyAPressed();
 void pollKeyStatus();
 
 #endif /* TET_KEYS_H_ */

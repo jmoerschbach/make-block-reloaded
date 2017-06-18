@@ -190,7 +190,7 @@ SnakeState SnakeGame::runGameEngine() {
 	return PLAYING;
 }
 
-void SnakeGame::loopSnake() {
+void SnakeGame::loop() {
 
 	switch (gameState) {
 	case TITLE:

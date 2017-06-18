@@ -16,7 +16,7 @@ public:
 	SnakeGame();
 	virtual ~SnakeGame();
 
-	void loopSnake();
+	void loop();
 
 private:
 	Snake snake;

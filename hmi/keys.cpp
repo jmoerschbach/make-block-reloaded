@@ -5,7 +5,7 @@ USB Usb;
 //USBHub Hub1(&Usb); // Some dongles have a hub inside
 
 BTD Btd(&Usb); // You have to create the Bluetooth Dongle instance like so
-		/* You can create the instance of the class in two ways */
+/* You can create the instance of the class in two ways */
 //WII Wii(&Btd, PAIR); // This will start an inquiry and then pair with your Wiimote - you only have to do this once
 WII Wii(&Btd); // After that you can simply create the instance like so and then press any button on the Wiimote
 
@@ -24,11 +24,15 @@ void lockKeys() {
 
 }
 
-bool wasDropPressed() {
+
+bool wasKeyAPressed() {
 	if (Wii.wiiUProControllerConnected)
 		return Wii.getButtonClick(A);
 	return false;
-	//return (ret & KEY_DROP);
+
+}
+bool wasDropPressed() {
+	return wasKeyAPressed();
 }
 bool wasDownPressed() {
 	if (Wii.wiiUProControllerConnected)
