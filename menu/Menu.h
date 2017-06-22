@@ -9,7 +9,7 @@
 #define MENU_MENU_H_
 #include "../WallGame.h"
 #define NUM_AVAILABLE_OPTIONS 3
-#define OFFSET 4
+#define OFFSET 8
 class Menu {
 
 public:
@@ -25,6 +25,7 @@ private:
 	void drawSelectionIndicator();
 	void drawSnakeOptionAt(uint8_t startY);
 	void drawTetrisOptionAt(uint8_t startY);
+	void drawBulbOptionAt(uint8_t startY);
 };
 
 #endif /* MENU_MENU_H_ */

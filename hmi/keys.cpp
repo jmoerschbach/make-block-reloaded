@@ -24,12 +24,19 @@ void lockKeys() {
 
 }
 
-
 bool wasKeyAPressed() {
 	if (Wii.wiiUProControllerConnected)
 		return Wii.getButtonClick(A);
 	return false;
 
+}
+
+uint16_t getLeftHatX() {
+	return Wii.getAnalogHat(LeftHatX);
+}
+
+uint16_t getRightHatY() {
+	return Wii.getAnalogHat(RightHatY);
 }
 bool wasDropPressed() {
 	return wasKeyAPressed();

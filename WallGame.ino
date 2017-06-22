@@ -5,9 +5,11 @@
 #include "hmi/keys.h"
 #include "tetri/tetris.h"
 #include "snake/SnakeGame.h"
+#include "bulb/Bulb.h"
 #include "menu/Menu.h"
 CRGB leds[NUM_LEDS];
 SnakeGame snakeGame;
+Bulb bulb;
 uint32_t nextEvent;
 Menu menu;
 
@@ -53,6 +55,9 @@ void loopGameState() {
 		snakeGame.loop();
 		break;
 	}
+	case STATE_LIGHT_BULB:
+		bulb.loop();
+		break;
 	default:
 		wallGameState = menu.loop();
 		break;
