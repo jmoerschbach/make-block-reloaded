@@ -32,7 +32,8 @@ private:
 	void eraseSnake();
 	void determineNewDirection();
 	void drawSnake();
-	SnakeState showTitle();bool isPixelAheadGood();
+	SnakeState showTitle();
+	bool isPixelAheadGood();
 	uint8_t getSpeedInFPS();
 	uint8_t calculateLevel();
 	SnakeState runGameEngine();

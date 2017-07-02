@@ -14,7 +14,7 @@
 #define FPS 60   // 60Hz
 
 #define GAME_CYCLE (1000/FPS)
-
+#define ENABLE_DEBUG
 #define NUM_LEDS ((H*W))
 extern CRGB leds[NUM_LEDS];
 
@@ -29,6 +29,10 @@ extern CRGB leds[NUM_LEDS];
 enum WallGameState {
 	STATE_TETRIS, STATE_SNAKE, STATE_LIGHT_BULB, STATE_MENU
 };
-
+#ifdef ENABLE_DEBUG
+#define DEBUG(msg) Serial.println(msg);
+#else
+#define DEBUG(msg) ;
+#endif
 #define LED_DATA_PIN    21
 #endif /* WALLGAME_H_ */

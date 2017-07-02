@@ -34,6 +34,9 @@ bool wasKeyAPressed() {
 uint16_t getLeftHatX() {
 	return Wii.getAnalogHat(LeftHatX);
 }
+uint16_t getLeftHatY() {
+	return Wii.getAnalogHat(LeftHatY);
+}
 
 uint16_t getRightHatY() {
 	return Wii.getAnalogHat(RightHatY);

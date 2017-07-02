@@ -17,7 +17,7 @@ WallGameState wallGameState;
 
 void setup() {
 	Serial.begin(115200);
-	Serial.println("Tetris");
+	Serial.println("WallGame");
 	FastLED.addLeds<WS2812B, LED_DATA_PIN, GRB>(leds, NUM_LEDS);
 	initKeys();
 	// the microseconds since startup are a perfect seed as
@@ -26,6 +26,7 @@ void setup() {
 	wallGameState = STATE_MENU;
 
 	initTetris();
+	DEBUG("Setup finished");
 }
 
 void loop() {

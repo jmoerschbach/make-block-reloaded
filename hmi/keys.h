@@ -22,4 +22,5 @@ bool wasKeyAPressed();
 void pollKeyStatus();
 uint16_t getLeftHatX();
 uint16_t getRightHatY();
+uint16_t getLeftHatY();
 #endif /* TET_KEYS_H_ */

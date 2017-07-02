@@ -124,12 +124,12 @@ void SnakeGame::redrawSnake() {
 bool SnakeGame::isPixelAheadGood() {
 	Coordinate pixelAhead = snake.getPixelAhead();
 	if (!isPixelInBounds(pixelAhead.x, pixelAhead.y)) {
-		Serial.println("not in bounds");
+		DEBUG("Snake: not in bounds");
 		return false;
 	}
 
 	if (isPixelSnake(pixelAhead.x, pixelAhead.y)) {
-		Serial.println("snake ahead");
+		DEBUG("Snake: snake ahead");
 		return false;
 	}
 
