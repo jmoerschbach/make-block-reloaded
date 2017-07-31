@@ -12,11 +12,11 @@
 Bulb::Bulb() {
 	hue = 0;
 	brightness = 128;
-	sat=128;
-	counter = HUE_CHANGE_SPEED;
-	hue = EEPROM.read(EEPROM_BULB_ADDRESS);
-	brightness=EEPROM.read(EEPROM_BULB_ADDRESS+1);
-	sat = EEPROM.read(EEPROM_BULB_ADDRESS+2);
+	sat = 128;
+	counter = HUE_SAT_CHANGE_SPEED;
+	EEPROM.get(EEPROM_BULB_ADDRESS_HUE, hue);
+	EEPROM.get(EEPROM_BULB_ADDRESS_BRIGHTNESS, brightness);
+	EEPROM.get(EEPROM_BULB_ADDRESS_SAT, sat);
 }
 
 Bulb::~Bulb() {
@@ -24,41 +24,33 @@ Bulb::~Bulb() {
 }
 
 void Bulb::determineHue() {
-	if (--counter != 0)
-		return;
-	counter = HUE_CHANGE_SPEED;
-
-	if (getLeftHatX() > 2200)
+	if (getLeftHatX() > 2200) {
 		hue++;
-	else if (getLeftHatX() < 1800)
+	} else if (getLeftHatX() < 1800) {
 		hue--;
-
-	EEPROM.put(EEPROM_BULB_ADDRESS, hue);
+	}
 }
 
 void Bulb::determineSat() {
-	if (--counter != 0)
-		return;
-	counter = HUE_CHANGE_SPEED;
 
-	if (getLeftHatY() > 2200)
+	if (getLeftHatY() > 2200) {
 		sat++;
-	else if (getLeftHatY() < 1800)
+	} else if (getLeftHatY() < 1800) {
 		sat--;
+	}
 
-	EEPROM.put(EEPROM_BULB_ADDRESS+2, sat);
 }
 
 void Bulb::determineBrightness() {
-	if (getRightHatY() > 2200 && brightness < 255)
+	if (getRightHatY() > 2200 && brightness < 255) {
 		brightness++;
-	else if (getRightHatY() < 1800 && brightness > 0)
+	} else if (getRightHatY() < 1800 && brightness > 0) {
 		brightness--;
-	EEPROM.put(EEPROM_BULB_ADDRESS + 1, brightness);
+	}
 
 }
 
-void Bulb::writeToLeds() {
+void Bulb::updateLeds() {
 	for (uint8_t x = 0; x < W; x++) {
 		for (uint8_t y = 0; y < H; y++) {
 			LED(x,y)= CHSV(hue, sat, brightness);
@@ -66,11 +58,22 @@ void Bulb::writeToLeds() {
 	}
 }
 
+void Bulb::saveConfiguration() {
+	if (wasKeyAPressed()) {
+		EEPROM.update(EEPROM_BULB_ADDRESS_BRIGHTNESS, brightness);
+		EEPROM.update(EEPROM_BULB_ADDRESS_HUE, hue);
+		EEPROM.update(EEPROM_BULB_ADDRESS_SAT, sat);
+	}
+}
 void Bulb::loop() {
-	determineHue();
-	determineBrightness();
-	//determineSat();
-	writeToLeds();
+	if (--counter == 0) {
+		determineSat();
+		determineHue();
+		determineBrightness();
+		updateLeds();
+		saveConfiguration();
+		counter = HUE_SAT_CHANGE_SPEED;
+	}
 	//LEDS.clear();
 //	fire();
 }

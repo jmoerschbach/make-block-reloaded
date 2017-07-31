@@ -35,4 +35,6 @@ enum WallGameState {
 #define DEBUG(msg) ;
 #endif
 #define LED_DATA_PIN    21
+#define EEPROM_ADDRESS_SPACE_TETRIS 100
+#define EEPROM_ADDRESS_SPACE_BULB 200
 #endif /* WALLGAME_H_ */

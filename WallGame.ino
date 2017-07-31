@@ -33,7 +33,6 @@ void loop() {
 	pollKeyStatus();
 	if (isTimeForNextEvent()) {
 		loopGameState();
-
 		nextEvent = millis() + GAME_CYCLE;
 		LEDS.show();
 	}

@@ -7,8 +7,10 @@
 #include "../WallGame.h"
 #ifndef BULB_BULB_H_
 #define BULB_BULB_H_
-#define HUE_CHANGE_SPEED 3
-#define EEPROM_BULB_ADDRESS 0
+#define HUE_SAT_CHANGE_SPEED 10
+#define EEPROM_BULB_ADDRESS_HUE EEPROM_ADDRESS_SPACE_BULB + 0
+#define EEPROM_BULB_ADDRESS_SAT EEPROM_ADDRESS_SPACE_BULB + 1
+#define EEPROM_BULB_ADDRESS_BRIGHTNESS EEPROM_ADDRESS_SPACE_BULB + 2
 class Bulb {
 public:
 	Bulb();
@@ -25,7 +27,8 @@ private:
 	void determineHue();
 	void determineBrightness();
 	void determineSat();
-	void writeToLeds();
+	void saveConfiguration();
+	void updateLeds();
 	void fire();
 	void igniteNewSpark();
 };
