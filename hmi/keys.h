@@ -19,6 +19,7 @@ bool wasRotatePressed();
 bool wasHomePressed();
 bool wasAnyKeyPressed();
 bool wasKeyAPressed();
+bool wasKeyPlusPressed();
 void pollKeyStatus();
 uint16_t getLeftHatX();
 uint16_t getRightHatY();

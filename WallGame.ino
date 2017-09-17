@@ -7,11 +7,14 @@
 #include "snake/SnakeGame.h"
 #include "bulb/Bulb.h"
 #include "menu/Menu.h"
+#include "tests/LedTest.h"
 CRGB leds[NUM_LEDS];
 SnakeGame snakeGame;
 Bulb bulb;
+LedTest ledTest;
 uint32_t nextEvent;
 Menu menu;
+bool enabled = true;
 
 WallGameState wallGameState;
 
@@ -28,14 +31,21 @@ void setup() {
 	initTetris();
 	DEBUG("Setup finished");
 }
-
+void readSerialConsole() {
+	if (Serial.available())
+		enabled = Serial.read() == 'a';
+}
 void loop() {
-	pollKeyStatus();
-	if (isTimeForNextEvent()) {
-		loopGameState();
-		nextEvent = millis() + GAME_CYCLE;
-		LEDS.show();
-	}
+	readSerialConsole();
+	if (enabled) {
+		pollKeyStatus();
+		if (isTimeForNextEvent()) {
+			loopGameState();
+			nextEvent = millis() + GAME_CYCLE;
+			LEDS.show();
+		}
+	} else
+		LEDS.clear(true);
 }
 
 bool isTimeForNextEvent() {
@@ -57,6 +67,9 @@ void loopGameState() {
 	}
 	case STATE_LIGHT_BULB:
 		bulb.loop();
+		break;
+	case STATE_LED_TEST:
+		ledTest.loop();
 		break;
 	default:
 		wallGameState = menu.loop();

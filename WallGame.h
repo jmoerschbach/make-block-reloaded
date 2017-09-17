@@ -27,7 +27,7 @@ extern CRGB leds[NUM_LEDS];
 #endif
 // possible game states
 enum WallGameState {
-	STATE_TETRIS, STATE_SNAKE, STATE_LIGHT_BULB, STATE_MENU
+	STATE_TETRIS, STATE_SNAKE, STATE_LIGHT_BULB, STATE_MENU, STATE_LED_TEST
 };
 #ifdef ENABLE_DEBUG
 #define DEBUG(msg) Serial.println(msg);

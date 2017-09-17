@@ -31,6 +31,13 @@ bool wasKeyAPressed() {
 
 }
 
+bool wasKeyPlusPressed() {
+	if (Wii.wiiUProControllerConnected)
+		return Wii.getButtonClick(PLUS);
+	return false;
+
+}
+
 uint16_t getLeftHatX() {
 	return Wii.getAnalogHat(LeftHatX);
 }

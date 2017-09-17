@@ -78,6 +78,8 @@ WallGameState Menu::loop() {
 	drawBulbOptionAt(2);
 	drawSnakeOptionAt(1);
 	drawTetrisOptionAt(0);
+	if (wasKeyPlusPressed())
+		return STATE_LED_TEST;
 	if (wasKeyAPressed())
 		return availableOptions[index];
 	else
