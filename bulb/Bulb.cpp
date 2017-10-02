@@ -65,13 +65,52 @@ void Bulb::saveConfiguration() {
 		EEPROM.update(EEPROM_BULB_ADDRESS_SAT, sat);
 	}
 }
+
+void Bulb::sinelon() {
+	// a colored dot sweeping back and forth, with fading trails
+	fadeToBlackBy(leds, 20, 20);
+	//fadeToBlackBy(&leds[20], 20, 20);
+	int pos = beatsin16(30, 0, 20 - 1);
+	leds[pos] += CHSV(hue, 255, 192);
+	for (uint8_t i = 0; i < 20; i++) {
+		leds[i + 20] = leds[i];
+	}
+	//leds[pos+20] += CHSV(hue, 255, 192);
+}
+
+void Bulb::copyColumn(uint8_t source, uint8_t target) {
+	for (uint8_t row = 0; row < 20; row++) {
+		leds[target * H + row] = leds[source * H + row];
+	}
+
+}
+void Bulb::spreadFirstColumn() {
+	for (uint8_t target = 1; target < 15; target++) {
+		copyColumn(0, target);
+	}
+
+}
+void Bulb::confetti() {
+	// random colored speckles that blink in and fade smoothly
+//  fadeToBlackBy( leds, NUM_LEDS, 3);
+	brighten8_lin(5);
+	fadeLightBy(leds, NUM_LEDS, 5);
+	//fadeUsingColor(leds, NUM_LEDS, CRGB::Red);
+	int pos = random16(NUM_LEDS);
+	leds[pos] += CHSV(hue + random8(64), 200, 255);
+}
 void Bulb::loop() {
+	//sinelon();
+	//confetti();
 	if (--counter == 0) {
-		determineSat();
-		determineHue();
-		determineBrightness();
-		updateLeds();
-		saveConfiguration();
+		fill_rainbow(leds, H, hue++, 10);
+		spreadFirstColumn();	//copyColumn(0, 1);
+
+//		determineSat();
+//		determineHue();
+//		determineBrightness();
+//		updateLeds();
+//		saveConfiguration();
 		counter = HUE_SAT_CHANGE_SPEED;
 	}
 	//LEDS.clear();

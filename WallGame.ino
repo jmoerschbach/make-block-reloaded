@@ -26,19 +26,26 @@ void setup() {
 	// the microseconds since startup are a perfect seed as
 	// the user has pressed a button since boot time
 	randomSeed(micros());   // init rng
-	wallGameState = STATE_MENU;
+	wallGameState = STATE_LIGHT_BULB;
 
 	initTetris();
 	DEBUG("Setup finished");
 }
 void readSerialConsole() {
-	if (Serial.available())
-		enabled = Serial.read() == 'a';
+	String str = "";
+	if (Serial.available() > 0) {
+		str = Serial.readStringUntil('\n');
+		DEBUG(str);
+		if (str.compareTo("en") == 0)
+			enabled = true;
+		else if (str.compareTo("di") == 0)
+			enabled = false;
+	}
 }
 void loop() {
+	pollKeyStatus();
 	readSerialConsole();
 	if (enabled) {
-		pollKeyStatus();
 		if (isTimeForNextEvent()) {
 			loopGameState();
 			nextEvent = millis() + GAME_CYCLE;

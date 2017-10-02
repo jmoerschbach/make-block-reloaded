@@ -31,6 +31,10 @@ private:
 	void updateLeds();
 	void fire();
 	void igniteNewSpark();
+	void sinelon();
+	void confetti();
+	void copyColumn(uint8_t source, uint8_t target);
+	void spreadFirstColumn();
 };
 
 #endif /* BULB_BULB_H_ */
