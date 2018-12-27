@@ -26,15 +26,16 @@ void setup() {
 	// the microseconds since startup are a perfect seed as
 	// the user has pressed a button since boot time
 	randomSeed(micros());   // init rng
-	wallGameState = STATE_LIGHT_BULB;
+	wallGameState = STATE_MENU;
 
 	initTetris();
 	DEBUG("Setup finished");
 }
 void readSerialConsole() {
-	String str = "";
+
 	if (Serial.available() > 0) {
-		str = Serial.readStringUntil('\n');
+		String str = Serial.readStringUntil('\n');
+		DEBUG("got command:")
 		DEBUG(str);
 		if (str.compareTo("en") == 0)
 			enabled = true;

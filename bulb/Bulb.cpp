@@ -13,6 +13,7 @@ Bulb::Bulb() {
 	hue = 0;
 	brightness = 128;
 	sat = 128;
+	state = RAINBOW;
 	counter = HUE_SAT_CHANGE_SPEED;
 	EEPROM.get(EEPROM_BULB_ADDRESS_HUE, hue);
 	EEPROM.get(EEPROM_BULB_ADDRESS_BRIGHTNESS, brightness);
@@ -79,7 +80,7 @@ void Bulb::sinelon() {
 }
 
 void Bulb::copyColumn(uint8_t source, uint8_t target) {
-	for (uint8_t row = 0; row < 20; row++) {
+	for (uint8_t row = 0; row < H; row++) {
 		leds[target * H + row] = leds[source * H + row];
 	}
 
@@ -99,22 +100,37 @@ void Bulb::confetti() {
 	int pos = random16(NUM_LEDS);
 	leds[pos] += CHSV(hue + random8(64), 200, 255);
 }
-void Bulb::loop() {
-	//sinelon();
-	//confetti();
-	if (--counter == 0) {
-		fill_rainbow(leds, H, hue++, 10);
-		spreadFirstColumn();	//copyColumn(0, 1);
 
-//		determineSat();
-//		determineHue();
-//		determineBrightness();
-//		updateLeds();
-//		saveConfiguration();
+void Bulb::rainbow() {
+
+	fill_rainbow(leds, H, hue++, 10);
+	spreadFirstColumn(); //copyColumn(0, 1);
+
+}
+
+void Bulb::loop() {
+	if (--counter == 0) {
 		counter = HUE_SAT_CHANGE_SPEED;
+
+		switch (state) {
+		case RAINBOW:
+			rainbow();
+			break;
+		case BULB:
+			bulb();
+			break;
+		default:
+			break;
+		}
 	}
-	//LEDS.clear();
-//	fire();
+}
+
+void Bulb::bulb() {
+	determineSat();
+	determineHue();
+	determineBrightness();
+	updateLeds();
+	saveConfiguration();
 }
 
 void Bulb::igniteNewSpark() {

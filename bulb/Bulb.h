@@ -5,6 +5,7 @@
  *      Author: Jonas
  */
 #include "../WallGame.h"
+#include "Enums.h"
 #ifndef BULB_BULB_H_
 #define BULB_BULB_H_
 #define HUE_SAT_CHANGE_SPEED 10
@@ -23,6 +24,7 @@ private:
 	uint8_t sat;
 	uint8_t counter;
 	byte fireArea[W][H];
+	BulbState state;
 
 	void determineHue();
 	void determineBrightness();
@@ -35,6 +37,8 @@ private:
 	void confetti();
 	void copyColumn(uint8_t source, uint8_t target);
 	void spreadFirstColumn();
+	void rainbow();
+	void bulb();
 };
 
 #endif /* BULB_BULB_H_ */
